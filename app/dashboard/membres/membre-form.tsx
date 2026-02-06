@@ -39,14 +39,14 @@ interface MembreFormProps {
 
 const fonctionsBureau = [
     "Président",
-    "Vice-Président",
+    "Président d'honneur",
+    "Manager",
     "Secrétaire Général",
     "Trésorier",
-    "Trésorier Adjoint",
-    "Capitaine",
-    "Vice-Capitaine",
-    "Responsable Communication",
+    "Responsable Communication & Marketing",
     "Responsable Logistique",
+    "Quinesithérapeute",
+    "Coach",
 ]
 
 export function MembreForm({ membre, mode }: MembreFormProps) {
@@ -75,12 +75,22 @@ export function MembreForm({ membre, mode }: MembreFormProps) {
                 ? await createMembre(formData)
                 : await updateMembre(membre!.id, formData)
 
+            // Si result existe et contient une erreur, l'afficher
             if (result?.error) {
                 setError(result.error)
                 setLoading(false)
             }
-            // La redirection est gérée par les actions
-        } catch {
+            // Sinon, la redirection s'est faite avec succès
+            // (pas besoin de gérer, le redirect() s'occupe de tout)
+        } catch (err) {
+            // Ignorer les erreurs de type NEXT_REDIRECT (comportement normal)
+            // Elles sont lancées par redirect() pour changer de page
+            if (err && typeof err === 'object' && 'digest' in err &&
+                typeof err.digest === 'string' && err.digest.includes('NEXT_REDIRECT')) {
+                // C'est une redirection normale, ne rien faire
+                return
+            }
+            // Sinon, c'est une vraie erreur
             setError("Une erreur est survenue")
             setLoading(false)
         }
@@ -307,8 +317,8 @@ export function MembreForm({ membre, mode }: MembreFormProps) {
                                     <span className="font-semibold">{getCotisationPreview()} MAD</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Cotisation annuelle</span>
-                                    <span className="font-semibold">{getCotisationPreview() * 12} MAD</span>
+                                    <span className="text-muted-foreground">Cotisation total de la saison</span>
+                                    <span className="font-semibold"> {getCotisationPreview() * Number(process.env.NEXT_PUBLIC_DUREE_SAISON_MOIS || 5)} MAD</span>
                                 </div>
                             </div>
 
