@@ -28,5 +28,23 @@ export default async function ModifierTransactionPage({ params }: PageProps) {
         .eq("statut", "Actif")
         .order("nom_prenom")
 
-    return <TransactionForm transaction={transaction} membres={membres || []} />
+    // Récupérer la liste des sponsors actifs
+    const { data: sponsorsData } = await supabase
+        .from("sponsors")
+        .select("id, nom")
+        .eq("actif", true)
+        .order("nom")
+
+    const sponsors = sponsorsData?.map(s => ({
+        id: s.id,
+        nom: s.nom
+    })) || []
+
+    return (
+        <TransactionForm
+            transaction={transaction}
+            membres={membres || []}
+            sponsors={sponsors}
+        />
+    )
 }

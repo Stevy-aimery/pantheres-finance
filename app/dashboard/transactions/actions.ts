@@ -1,7 +1,6 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 
 export interface TransactionFormData {
@@ -16,7 +15,8 @@ export interface TransactionFormData {
     mode_paiement: string
 }
 
-export async function createTransaction(data: TransactionFormData) {
+// Version sans redirect pour permettre les toasts côté client
+export async function createTransactionAction(data: TransactionFormData) {
     const supabase = await createClient()
 
     // Calculer entrée ou sortie selon le type
@@ -37,14 +37,14 @@ export async function createTransaction(data: TransactionFormData) {
     })
 
     if (error) {
-        return { error: error.message }
+        return { error: error.message, success: false }
     }
 
     revalidatePath("/dashboard/transactions")
-    redirect("/dashboard/transactions?success=created")
+    return { success: true }
 }
 
-export async function updateTransaction(id: string, data: TransactionFormData) {
+export async function updateTransactionAction(id: string, data: TransactionFormData) {
     const supabase = await createClient()
 
     const entree = data.type === "Recette" ? data.montant : 0
@@ -67,11 +67,11 @@ export async function updateTransaction(id: string, data: TransactionFormData) {
         .eq("id", id)
 
     if (error) {
-        return { error: error.message }
+        return { error: error.message, success: false }
     }
 
     revalidatePath("/dashboard/transactions")
-    redirect("/dashboard/transactions?success=updated")
+    return { success: true }
 }
 
 export async function deleteTransaction(id: string) {
@@ -80,7 +80,7 @@ export async function deleteTransaction(id: string) {
     const { error } = await supabase.from("transactions").delete().eq("id", id)
 
     if (error) {
-        return { error: error.message }
+        return { error: error.message, success: false }
     }
 
     revalidatePath("/dashboard/transactions")

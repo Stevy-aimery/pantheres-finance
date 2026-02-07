@@ -16,14 +16,20 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ArrowLeft, Save, Loader2, TrendingUp, TrendingDown } from "lucide-react"
+import { ArrowLeft, Save, Loader2, TrendingUp, TrendingDown, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createTransaction, updateTransaction, TransactionFormData } from "./actions"
+import { createTransactionAction, updateTransactionAction, TransactionFormData } from "./actions"
+import { TiersCombobox } from "@/components/ui/tiers-combobox"
 import { toast } from "sonner"
 
 interface Membre {
     id: string
     nom_prenom: string
+}
+
+interface Sponsor {
+    id: string
+    nom: string
 }
 
 interface Transaction {
@@ -43,14 +49,17 @@ interface Transaction {
 interface TransactionFormProps {
     transaction?: Transaction | null
     membres: Membre[]
+    sponsors?: Sponsor[]
 }
 
 // Catégories prédéfinies
 const CATEGORIES_RECETTES = [
     "Cotisations",
+    "Adhésion (Inscription)",
     "Sponsoring",
     "Subventions",
     "Événements",
+    "Sanction",
     "Dons",
     "Autre",
 ]
@@ -59,6 +68,7 @@ const CATEGORIES_DEPENSES = [
     "Location Terrain",
     "Équipements",
     "Transport",
+    "Voyage",
     "Arbitrage",
     "Événements",
     "Communication",
@@ -73,8 +83,9 @@ const MODES_PAIEMENT = [
     { value: "Chèque", label: "Chèque" },
 ]
 
-export function TransactionForm({ transaction, membres }: TransactionFormProps) {
+export function TransactionForm({ transaction, membres, sponsors = [] }: TransactionFormProps) {
     const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
     const isEditing = !!transaction
 
     // Calculer le montant initial
@@ -94,7 +105,6 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
     const [libelle, setLibelle] = useState(transaction?.libelle || "")
     const [montant, setMontant] = useState(getMontantInitial())
     const [modePaiement, setModePaiement] = useState(transaction?.mode_paiement || "Espèces")
-    const [loading, setLoading] = useState(false)
 
     const categories = type === "Recette" ? CATEGORIES_RECETTES : CATEGORIES_DEPENSES
 
@@ -102,11 +112,11 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
         e.preventDefault()
 
         if (!date || !categorie || !libelle || !montant || !modePaiement) {
-            toast.error("Veuillez remplir tous les champs obligatoires")
+            toast.error("Champs obligatoires manquants", {
+                description: "Veuillez remplir tous les champs marqués d'un *",
+            })
             return
         }
-
-        setLoading(true)
 
         const formData: TransactionFormData = {
             date,
@@ -120,26 +130,37 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
             mode_paiement: modePaiement,
         }
 
+        setIsLoading(true)
+
         try {
+            let result
             if (isEditing) {
-                const result = await updateTransaction(transaction.id, formData)
-                if (result?.error) {
-                    toast.error(result.error)
-                    setLoading(false)
-                }
+                result = await updateTransactionAction(transaction.id, formData)
             } else {
-                const result = await createTransaction(formData)
-                if (result?.error) {
-                    toast.error(result.error)
-                    setLoading(false)
-                }
+                result = await createTransactionAction(formData)
+            }
+
+            if (result?.error) {
+                toast.error(isEditing ? "Erreur lors de la modification" : "Erreur lors de la création", {
+                    description: result.error,
+                })
+                setIsLoading(false)
+            } else {
+                toast.success(isEditing ? "Transaction modifiée avec succès" : "Transaction enregistrée avec succès", {
+                    description: `${type} de ${montant} MAD ${isEditing ? "modifiée" : "ajoutée au journal"}`,
+                })
+                // Petit délai pour voir le toast avant la redirection
+                setTimeout(() => {
+                    router.push("/dashboard/transactions")
+                    router.refresh()
+                }, 500)
             }
         } catch (error) {
-            // Redirect exceptions are normal, ignore them
-            if (!(error instanceof Error && error.message.includes("NEXT_REDIRECT"))) {
-                toast.error("Une erreur est survenue")
-                setLoading(false)
-            }
+            console.error("Error:", error)
+            toast.error("Une erreur inattendue s'est produite", {
+                description: String(error),
+            })
+            setIsLoading(false)
         }
     }
 
@@ -147,6 +168,15 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
     const handleTypeChange = (newType: "Recette" | "Dépense") => {
         setType(newType)
         setCategorie("")
+    }
+
+    // Gérer la sélection d'un tiers
+    const handleTiersChange = (value: string) => {
+        setTiers(value)
+    }
+
+    const handleMembreSelect = (selectedMembreId: string) => {
+        setMembreId(selectedMembreId)
     }
 
     return (
@@ -262,6 +292,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                                         value={date}
                                         onChange={(e) => setDate(e.target.value)}
                                         required
+                                        disabled={isLoading}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -275,6 +306,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                                         value={montant}
                                         onChange={(e) => setMontant(e.target.value)}
                                         required
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>
@@ -282,7 +314,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="categorie">Catégorie *</Label>
-                                    <Select value={categorie} onValueChange={setCategorie}>
+                                    <Select value={categorie} onValueChange={setCategorie} disabled={isLoading}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Sélectionner..." />
                                         </SelectTrigger>
@@ -302,6 +334,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                                         placeholder="Optionnel"
                                         value={sousCategorie}
                                         onChange={(e) => setSousCategorie(e.target.value)}
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>
@@ -314,6 +347,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                                     value={libelle}
                                     onChange={(e) => setLibelle(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
                         </CardContent>
@@ -328,7 +362,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="mode">Mode de paiement *</Label>
-                                <Select value={modePaiement} onValueChange={setModePaiement}>
+                                <Select value={modePaiement} onValueChange={setModePaiement} disabled={isLoading}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -343,33 +377,19 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="tiers">Tiers (nom, entreprise...)</Label>
-                                <Input
-                                    id="tiers"
-                                    placeholder="Ex: Fournisseur XYZ, Sponsor ABC..."
+                                <Label>Tiers (membre, sponsor ou autre)</Label>
+                                <TiersCombobox
                                     value={tiers}
-                                    onChange={(e) => setTiers(e.target.value)}
+                                    onValueChange={handleTiersChange}
+                                    onMembreSelect={handleMembreSelect}
+                                    membres={membres}
+                                    sponsors={sponsors}
+                                    placeholder="Sélectionner ou saisir un tiers..."
                                 />
+                                <p className="text-xs text-muted-foreground">
+                                    👤 Membre • 🏢 Sponsor • ✏️ Ou saisissez un nom personnalisé
+                                </p>
                             </div>
-
-                            {type === "Recette" && categorie === "Cotisations" && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="membre">Membre concerné</Label>
-                                    <Select value={membreId} onValueChange={setMembreId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionner un membre..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="">Aucun</SelectItem>
-                                            {membres.map((membre) => (
-                                                <SelectItem key={membre.id} value={membre.id}>
-                                                    {membre.nom_prenom}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -377,13 +397,13 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                 {/* Actions */}
                 <div className="flex gap-4 mt-6">
                     <Link href="/dashboard/transactions" className="flex-1 sm:flex-none">
-                        <Button type="button" variant="outline" className="w-full sm:w-auto">
+                        <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={isLoading}>
                             Annuler
                         </Button>
                     </Link>
                     <Button
                         type="submit"
-                        disabled={loading}
+                        disabled={isLoading}
                         className={cn(
                             "flex-1 sm:flex-none gap-2",
                             type === "Recette"
@@ -392,7 +412,7 @@ export function TransactionForm({ transaction, membres }: TransactionFormProps) 
                             "text-white"
                         )}
                     >
-                        {loading ? (
+                        {isLoading ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 Enregistrement...
