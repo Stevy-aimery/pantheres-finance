@@ -3,6 +3,8 @@ import { KPICards } from "@/components/dashboard/kpi-cards"
 import { RecentTransactions } from "@/components/dashboard/recent-transactions"
 import { CotisationsStatus } from "@/components/dashboard/cotisations-status"
 import { BudgetOverview } from "@/components/dashboard/budget-overview"
+import { AlertesPanel } from "@/components/dashboard/alertes-panel"
+import { genererAlertes } from "@/lib/alertes"
 
 export const dynamic = "force-dynamic"
 
@@ -98,6 +100,7 @@ export default async function DashboardPage() {
     const transactions = await getRecentTransactions()
     const cotisations = await getCotisationsStatus()
     const budget = await getBudgetOverview()
+    const alertes = await genererAlertes()
 
     return (
         <div className="space-y-6">
@@ -111,6 +114,9 @@ export default async function DashboardPage() {
 
             {/* KPI Cards */}
             <KPICards data={kpis} />
+
+            {/* Alertes Panel */}
+            <AlertesPanel alertes={alertes} />
 
             {/* Main Grid */}
             <div className="grid gap-6 lg:grid-cols-2">
