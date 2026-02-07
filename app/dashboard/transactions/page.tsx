@@ -1,36 +1,33 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Receipt, Plus, Construction } from "lucide-react"
-import Link from "next/link"
+import { createClient } from "@/lib/supabase/server"
+import { TransactionsClient } from "./transactions-client"
 
-export default function TransactionsPage() {
+export default async function TransactionsPage() {
+    const supabase = await createClient()
+
+    // Récupérer les transactions avec tri par date décroissante
+    const { data: transactions, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false })
+
+    if (error) {
+        console.error("Erreur lors du chargement des transactions:", error)
+    }
+
+    const transactionsList = transactions || []
+
+    // Calculer les totaux
+    const totalRecettes = transactionsList.reduce((acc, t) => acc + (t.entree || 0), 0)
+    const totalDepenses = transactionsList.reduce((acc, t) => acc + (t.sortie || 0), 0)
+    const soldeActuel = totalRecettes - totalDepenses
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
-                    <p className="text-muted-foreground">Journal des recettes et dépenses</p>
-                </div>
-                <Link href="/dashboard/transactions/nouvelle">
-                    <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                        <Plus className="w-4 h-4" />
-                        Nouvelle transaction
-                    </Button>
-                </Link>
-            </div>
-
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
-                        <Construction className="w-8 h-8 text-amber-500" />
-                    </div>
-                    <CardTitle className="mb-2">Module en développement</CardTitle>
-                    <p className="text-muted-foreground max-w-md">
-                        Le module Transactions sera disponible prochainement.
-                        Il permettra d&apos;enregistrer et suivre toutes les entrées et sorties d&apos;argent.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
+        <TransactionsClient
+            transactions={transactionsList}
+            soldeActuel={soldeActuel}
+            totalRecettes={totalRecettes}
+            totalDepenses={totalDepenses}
+        />
     )
 }
