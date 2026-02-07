@@ -1,0 +1,12 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/relance-cotisations",
+            "schedule": "0 9 15 * *"
+        },
+        {
+            "path": "/api/cron/rapport-mensuel",
+            "schedule": "0 8 1 * *"
+        }
+    ]
+}

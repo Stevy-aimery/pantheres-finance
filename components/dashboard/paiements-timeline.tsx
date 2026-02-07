@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { envoyerConfirmationPaiement } from "@/app/actions/emails"
 
 interface Paiement {
     id: string
@@ -111,14 +112,15 @@ export function PaiementsTimeline({
 
         setLoading(true)
 
-        const { error } = await supabase.from("paiements").insert({
+        // Récupérer l'ID du paiement inséré
+        const { data: newPaiement, error } = await supabase.from("paiements").insert({
             membre_id: membreId,
             mois: selectedMois,
             annee: anneeEnCours,
             montant: parseFloat(montant),
             mode_paiement: modePaiement,
             date_paiement: new Date().toISOString().split("T")[0],
-        })
+        }).select().single()
 
         setLoading(false)
 
@@ -134,6 +136,15 @@ export function PaiementsTimeline({
         toast.success("Paiement enregistré", {
             description: `${MOIS_SAISON.find(m => m.numero === selectedMois)?.nom} ${anneeEnCours} - ${montant} MAD`,
         })
+
+        // Envoyer l'email de confirmation (async)
+        if (newPaiement) {
+            envoyerConfirmationPaiement(membreId, newPaiement.id)
+                .then(res => {
+                    if (res.error) console.error("Erreur envoi email:", res.error)
+                    else console.log("Email confirmation envoyé")
+                })
+        }
 
         setAddDialogOpen(false)
         onPaiementAdded?.()
