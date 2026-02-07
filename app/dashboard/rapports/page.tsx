@@ -1,33 +1,48 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { FileText, Download, Construction } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { RapportsClient } from "./rapports-client"
 
-export default function RapportsPage() {
+export const dynamic = "force-dynamic"
+
+export default async function RapportsPage() {
+    const supabase = await createClient()
+
+    // Récupérer les transactions
+    const { data: transactions } = await supabase
+        .from("transactions")
+        .select("id, date, type, categorie, libelle, entree, sortie, mode_paiement")
+        .order("date", { ascending: false })
+
+    // Récupérer les membres
+    const { data: membres } = await supabase
+        .from("membres")
+        .select("id, nom_prenom, email, telephone, statut, role_joueur, role_bureau, fonction_bureau, cotisation_mensuelle, date_entree")
+        .order("nom_prenom")
+
+    // Récupérer l'état des cotisations
+    const { data: cotisations } = await supabase
+        .from("v_etat_cotisations")
+        .select("id, nom_prenom, cotisation_mensuelle, total_paye, reste_a_payer, pourcentage_paye, etat_paiement")
+        .order("nom_prenom")
+
+    // Récupérer les KPIs
+    const { data: kpis } = await supabase
+        .from("v_kpis")
+        .select("*")
+        .single()
+
+    const stats = {
+        solde: kpis?.solde_actuel || 0,
+        totalRecettes: kpis?.total_recettes || 0,
+        totalDepenses: kpis?.total_depenses || 0,
+        tauxRecouvrement: kpis?.taux_recouvrement || 0,
+    }
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Rapports</h1>
-                    <p className="text-muted-foreground">Génération et export des rapports financiers</p>
-                </div>
-                <Button className="gap-2" variant="outline">
-                    <Download className="w-4 h-4" />
-                    Exporter
-                </Button>
-            </div>
-
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
-                        <Construction className="w-8 h-8 text-amber-500" />
-                    </div>
-                    <CardTitle className="mb-2">Module en développement</CardTitle>
-                    <p className="text-muted-foreground max-w-md">
-                        Le module Rapports sera disponible prochainement.
-                        Il permettra de générer des comptes-rendus financiers en PDF/Excel.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
+        <RapportsClient
+            transactions={transactions || []}
+            membres={membres || []}
+            cotisations={cotisations || []}
+            stats={stats}
+        />
     )
 }

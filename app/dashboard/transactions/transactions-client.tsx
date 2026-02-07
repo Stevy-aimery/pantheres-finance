@@ -50,8 +50,10 @@ import {
     Loader2,
     Calendar,
     Filter,
+    Download,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { convertToCSV, downloadCSV, formatDateExport, formatMontantExport } from "@/lib/export"
 import { deleteTransaction } from "./actions"
 import { toast } from "sonner"
 
@@ -190,6 +192,34 @@ export function TransactionsClient({
         }
     }
 
+    // Export CSV
+    const handleExportCSV = () => {
+        const exportData = filteredTransactions.map(t => ({
+            date_transaction: t.date,
+            type: t.type,
+            categorie: t.categorie,
+            description: t.libelle,
+            montant: t.type === "Recette" ? t.entree : -t.sortie,
+            mode_paiement: t.mode_paiement,
+        }))
+
+        const columns = [
+            { key: "date_transaction" as const, label: "Date", format: formatDateExport },
+            { key: "type" as const, label: "Type" },
+            { key: "categorie" as const, label: "Catégorie" },
+            { key: "description" as const, label: "Description" },
+            { key: "montant" as const, label: "Montant (MAD)", format: formatMontantExport },
+            { key: "mode_paiement" as const, label: "Mode de paiement" },
+        ]
+
+        const csv = convertToCSV(exportData, columns)
+        const dateStr = new Date().toISOString().split("T")[0]
+        downloadCSV(csv, `transactions_pantheres_${dateStr}`)
+        toast.success("Export réussi", {
+            description: `${filteredTransactions.length} transactions exportées`,
+        })
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -200,12 +230,23 @@ export function TransactionsClient({
                         Journal des recettes et dépenses
                     </p>
                 </div>
-                <Link href="/dashboard/transactions/nouvelle">
-                    <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                        <Plus className="w-4 h-4" />
-                        Nouvelle transaction
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={handleExportCSV}
+                        disabled={filteredTransactions.length === 0}
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Exporter CSV</span>
                     </Button>
-                </Link>
+                    <Link href="/dashboard/transactions/nouvelle">
+                        <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                            <Plus className="w-4 h-4" />
+                            Nouvelle transaction
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Cards */}
