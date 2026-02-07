@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
     Table,
     TableBody,
@@ -47,7 +47,6 @@ import {
     Phone,
     Mail,
     UserCheck,
-    UserX,
     Shield,
     AlertCircle,
     CheckCircle,
@@ -55,6 +54,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { MembreDetailModal } from "@/components/dashboard/membre-detail-modal"
+import { toast } from "sonner"
 
 interface Membre {
     id: string
@@ -90,14 +91,37 @@ function formatCurrency(amount: number) {
 
 export function MembresClient({ membres, cotisations }: MembresClientProps) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const supabase = createClient()
 
     const [search, setSearch] = useState("")
     const [filterStatut, setFilterStatut] = useState<string>("all")
     const [filterRole, setFilterRole] = useState<string>("all")
+
+    // States pour le modal de détails
+    const [selectedMembre, setSelectedMembre] = useState<Membre | null>(null)
+    const [detailModalOpen, setDetailModalOpen] = useState(false)
+
+    // States pour le modal de suppression
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [membreToDelete, setMembreToDelete] = useState<Membre | null>(null)
     const [deleting, setDeleting] = useState(false)
+
+    // Toast de succès
+    useEffect(() => {
+        const success = searchParams.get("success")
+        if (success === "created") {
+            toast.success("Membre créé avec succès", {
+                description: "Le membre a été ajouté à la liste",
+            })
+            router.replace("/dashboard/membres", { scroll: false })
+        } else if (success === "updated") {
+            toast.success("Modification effectuée avec succès", {
+                description: "Les informations du membre ont été mises à jour",
+            })
+            router.replace("/dashboard/membres", { scroll: false })
+        }
+    }, [searchParams, router])
 
     // Filtrer les membres
     const filteredMembres = membres.filter((membre) => {
@@ -138,8 +162,18 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
         setDeleteDialogOpen(false)
 
         if (!error) {
+            toast.success("Membre supprimé", {
+                description: "Le membre a été retiré de la liste",
+            })
             router.refresh()
+        } else {
+            toast.error("Erreur lors de la suppression")
         }
+    }
+
+    const handleRowClick = (membre: Membre) => {
+        setSelectedMembre(membre)
+        setDetailModalOpen(true)
     }
 
     const getInitials = (name: string) => {
@@ -313,7 +347,11 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                                     const isRetard = cotisation?.etat_paiement === "Retard"
 
                                     return (
-                                        <TableRow key={membre.id}>
+                                        <TableRow
+                                            key={membre.id}
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => handleRowClick(membre)}
+                                        >
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-9 w-9">
@@ -375,7 +413,7 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                                                 </div>
                                             </TableCell>
                                             <TableCell>{getStatutBadge(membre.statut)}</TableCell>
-                                            <TableCell>
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -391,7 +429,8 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             className="text-destructive focus:text-destructive"
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
                                                                 setMembreToDelete(membre)
                                                                 setDeleteDialogOpen(true)
                                                             }}
@@ -410,6 +449,14 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Detail Modal */}
+            <MembreDetailModal
+                membre={selectedMembre}
+                cotisation={selectedMembre ? cotisations[selectedMembre.id] : null}
+                open={detailModalOpen}
+                onClose={() => setDetailModalOpen(false)}
+            />
 
             {/* Delete Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
