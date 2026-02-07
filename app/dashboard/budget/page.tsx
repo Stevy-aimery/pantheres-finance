@@ -1,33 +1,76 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { PiggyBank, Plus, Construction } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { BudgetClient } from "./budget-client"
 
-export default function BudgetPage() {
+export default async function BudgetPage() {
+    const supabase = await createClient()
+
+    // Définir la période par défaut (saison Mars-Juillet 2026)
+    const currentYear = new Date().getFullYear()
+    const periodeDebut = `${currentYear}-03-01`
+    const periodeFin = `${currentYear}-07-31`
+
+    // Récupérer les budgets
+    const { data: budgets, error: budgetError } = await supabase
+        .from("budget")
+        .select("*")
+        .order("type")
+        .order("categorie")
+
+    if (budgetError) {
+        console.error("Erreur chargement budgets:", budgetError)
+    }
+
+    // Récupérer les transactions pour calculer le réalisé
+    const { data: transactions, error: transError } = await supabase
+        .from("transactions")
+        .select("type, categorie, entree, sortie, date")
+        .gte("date", periodeDebut)
+        .lte("date", periodeFin)
+
+    if (transError) {
+        console.error("Erreur chargement transactions:", transError)
+    }
+
+    // Calculer les montants réalisés par catégorie
+    const realiseParCategorie: Record<string, number> = {}
+
+    transactions?.forEach(t => {
+        // Normaliser la clé (type + catégorie)
+        const key = `${t.type}-${t.categorie}`
+        const montant = t.type === "Recette" ? t.entree : t.sortie
+        realiseParCategorie[key] = (realiseParCategorie[key] || 0) + montant
+    })
+
+    // Enrichir les budgets avec les montants réalisés
+    const budgetsEnrichis = (budgets || []).map(b => {
+        const key = `${b.type}-${b.categorie}`
+        const realise = realiseParCategorie[key] || 0
+        const ecart = realise - b.budget_alloue
+        const pourcentage = b.budget_alloue > 0 ? (realise / b.budget_alloue) * 100 : 0
+
+        let statut: "OK" | "Attention" | "Dépassé"
+        if (b.type === "Dépense") {
+            // Pour les dépenses : dépassé si > 100%, attention si > 80%
+            statut = pourcentage > 100 ? "Dépassé" : pourcentage > 80 ? "Attention" : "OK"
+        } else {
+            // Pour les recettes : OK si >= 100%, attention si >= 80%, sinon dépassé (sous-performance)
+            statut = pourcentage >= 100 ? "OK" : pourcentage >= 80 ? "Attention" : "Dépassé"
+        }
+
+        return {
+            ...b,
+            realise,
+            ecart,
+            pourcentage,
+            statut,
+        }
+    })
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Budget</h1>
-                    <p className="text-muted-foreground">Budget prévisionnel et suivi des dépenses</p>
-                </div>
-                <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                    <Plus className="w-4 h-4" />
-                    Configurer budget
-                </Button>
-            </div>
-
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
-                        <Construction className="w-8 h-8 text-amber-500" />
-                    </div>
-                    <CardTitle className="mb-2">Module en développement</CardTitle>
-                    <p className="text-muted-foreground max-w-md">
-                        Le module Budget sera disponible prochainement.
-                        Il permettra de définir un budget prévisionnel et de comparer avec le réalisé.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
+        <BudgetClient
+            budgets={budgetsEnrichis}
+            periodeDebut={periodeDebut}
+            periodeFin={periodeFin}
+        />
     )
 }
