@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,6 +25,8 @@ import {
     ArrowLeft,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { PaiementsTimeline } from "./paiements-timeline"
 
 interface Membre {
     id: string
@@ -45,11 +48,21 @@ interface CotisationStatus {
     pourcentage_paye: number
 }
 
+interface Paiement {
+    id: string
+    mois: number
+    annee: number
+    montant: number
+    date_paiement: string
+    mode_paiement: string
+}
+
 interface MembreDetailModalProps {
     membre: Membre | null
     cotisation: CotisationStatus | null
     open: boolean
     onClose: () => void
+    onRefresh?: () => void
 }
 
 function formatCurrency(amount: number) {
@@ -67,7 +80,46 @@ function formatDate(dateString: string) {
     })
 }
 
-export function MembreDetailModal({ membre, cotisation, open, onClose }: MembreDetailModalProps) {
+export function MembreDetailModal({
+    membre,
+    cotisation,
+    open,
+    onClose,
+    onRefresh
+}: MembreDetailModalProps) {
+    const [paiements, setPaiements] = useState<Paiement[]>([])
+    const [loadingPaiements, setLoadingPaiements] = useState(false)
+    const supabase = createClient()
+
+    // Charger les paiements quand le modal s'ouvre
+    useEffect(() => {
+        if (open && membre) {
+            loadPaiements()
+        }
+    }, [open, membre?.id])
+
+    const loadPaiements = async () => {
+        if (!membre) return
+
+        setLoadingPaiements(true)
+        const { data, error } = await supabase
+            .from("paiements")
+            .select("*")
+            .eq("membre_id", membre.id)
+            .eq("annee", new Date().getFullYear())
+            .order("mois", { ascending: true })
+
+        if (!error && data) {
+            setPaiements(data)
+        }
+        setLoadingPaiements(false)
+    }
+
+    const handlePaiementAdded = () => {
+        loadPaiements()
+        onRefresh?.()
+    }
+
     if (!membre) return null
 
     const getInitials = (name: string) => {
@@ -148,10 +200,21 @@ export function MembreDetailModal({ membre, cotisation, open, onClose }: MembreD
                         </div>
                     </div>
 
+                    {/* Timeline Paiements - NOUVEAU */}
+                    <div className="p-4 rounded-lg border bg-gradient-to-br from-muted/30 to-transparent">
+                        <PaiementsTimeline
+                            membreId={membre.id}
+                            membreNom={membre.nom_prenom}
+                            cotisationMensuelle={membre.cotisation_mensuelle}
+                            paiements={paiements}
+                            onPaiementAdded={handlePaiementAdded}
+                        />
+                    </div>
+
                     {/* Cotisations */}
                     <div className="space-y-3">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                            Cotisations
+                            Résumé Cotisations
                         </h3>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="p-4 rounded-lg border">

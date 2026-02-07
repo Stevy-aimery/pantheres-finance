@@ -456,6 +456,7 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                 cotisation={selectedMembre ? cotisations[selectedMembre.id] : null}
                 open={detailModalOpen}
                 onClose={() => setDetailModalOpen(false)}
+                onRefresh={() => router.refresh()}
             />
 
             {/* Delete Dialog */}
