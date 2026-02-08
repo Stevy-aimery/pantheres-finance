@@ -6,15 +6,23 @@ import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+    <div className="relative">
+      {/* Scroll indicator for mobile */}
+      <div className="md:hidden flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+        <span>←</span>
+        <span>Glisser pour voir plus</span>
+        <span>→</span>
+      </div>
+      <div
+        data-slot="table-container"
+        className="relative w-full overflow-x-auto scrollbar-visible"
+      >
+        <table
+          data-slot="table"
+          className={cn("w-full caption-bottom text-sm", className)}
+          {...props}
+        />
+      </div>
     </div>
   )
 }

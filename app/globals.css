@@ -119,6 +119,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -139,8 +140,9 @@ body {
 
 /* Better touch targets for mobile */
 @media (max-width: 640px) {
+
   /* Increase minimum touch target size */
-  button, 
+  button,
   [role="button"],
   a,
   input,
@@ -160,22 +162,23 @@ body {
   }
 
   /* Full width buttons on mobile */
-  .gap-2 > button {
+  .gap-2>button {
     flex: 1;
   }
 }
 
 /* Tablet optimizations */
 @media (min-width: 641px) and (max-width: 1024px) {
+
   /* Slightly reduce spacing */
   .lg\:p-6 {
     padding: 1.25rem;
   }
 }
 
-/* Hide scrollbar on mobile but keep functionality */
+/* Hide scrollbar on mobile for body/main scroll only */
 @media (max-width: 768px) {
-  ::-webkit-scrollbar {
+  body::-webkit-scrollbar {
     width: 0;
     height: 0;
   }
@@ -206,12 +209,43 @@ button,
   transition: none !important;
 }
 
-/* Table responsive improvements */
+/* Table responsive improvements with visible scrollbar */
 @media (max-width: 768px) {
+
+  /* Table wrapper for scrolling */
   table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Styled scrollbar for tables on mobile */
+  table::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  table::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  table::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  table::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Add scroll hint indicator */
+  [data-scroll-hint]::after {
+    content: "← Glisser →";
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    padding: 0.5rem 0;
   }
 }
 
