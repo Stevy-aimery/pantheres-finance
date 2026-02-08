@@ -5,6 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
     FileSpreadsheet,
     FileText,
     Users,
@@ -12,11 +18,12 @@ import {
     PiggyBank,
     Download,
     Loader2,
-    Calendar,
     TrendingUp,
+    ChevronDown,
 } from "lucide-react"
 import { toast } from "sonner"
 import { convertToCSV, downloadCSV, formatDateExport, formatMontantExport } from "@/lib/export"
+import { exportToExcel, EXCEL_COLUMNS } from "@/lib/export-excel"
 
 interface Transaction {
     id: string
@@ -67,8 +74,9 @@ interface RapportsClientProps {
 export function RapportsClient({ transactions, membres, cotisations, stats }: RapportsClientProps) {
     const [exportingType, setExportingType] = useState<string | null>(null)
 
-    const handleExport = async (type: string) => {
-        setExportingType(type)
+    // ===== EXPORT CSV =====
+    const handleExportCSV = async (type: string) => {
+        setExportingType(`${type}-csv`)
         const dateStr = new Date().toISOString().split("T")[0]
 
         try {
@@ -91,7 +99,7 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
                         { key: "mode_paiement" as const, label: "Mode de paiement" },
                     ]
                     downloadCSV(convertToCSV(data, columns), `transactions_${dateStr}`)
-                    toast.success("Export Transactions!", { description: `${data.length} lignes exportées` })
+                    toast.success("Export CSV réussi!", { description: `${data.length} transactions exportées` })
                     break
                 }
 
@@ -108,7 +116,7 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
                         { key: "date_entree" as const, label: "Date d'entrée", format: formatDateExport },
                     ]
                     downloadCSV(convertToCSV(membres, columns), `membres_${dateStr}`)
-                    toast.success("Export Membres!", { description: `${membres.length} membres exportés` })
+                    toast.success("Export CSV réussi!", { description: `${membres.length} membres exportés` })
                     break
                 }
 
@@ -122,12 +130,86 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
                         { key: "etat_paiement" as const, label: "État" },
                     ]
                     downloadCSV(convertToCSV(cotisations, columns), `cotisations_${dateStr}`)
-                    toast.success("Export Cotisations!", { description: `${cotisations.length} lignes exportées` })
+                    toast.success("Export CSV réussi!", { description: `${cotisations.length} lignes exportées` })
                     break
                 }
             }
         } catch (error) {
-            toast.error("Erreur lors de l'export")
+            toast.error("Erreur lors de l'export CSV")
+        } finally {
+            setExportingType(null)
+        }
+    }
+
+    // ===== EXPORT EXCEL STYLISÉ =====
+    const handleExportExcel = async (type: string) => {
+        setExportingType(`${type}-excel`)
+
+        try {
+            switch (type) {
+                case "transactions": {
+                    const data = transactions.map(t => ({
+                        date: t.date,
+                        type: t.type === "Recette" ? "✅ Recette" : "📤 Dépense",
+                        categorie: t.categorie,
+                        description: t.libelle,
+                        montant: t.type === "Recette" ? t.entree : -t.sortie,
+                        mode_paiement: t.mode_paiement,
+                    }))
+                    await exportToExcel(data, EXCEL_COLUMNS.transactions, {
+                        title: "Journal des Transactions",
+                        subtitle: `Panthères de Fès • Saison 2025-2026`,
+                        filename: "transactions_pantheres",
+                        sheetName: "Transactions",
+                    })
+                    toast.success("Export Excel réussi! 📊", {
+                        description: `${data.length} transactions avec mise en forme`
+                    })
+                    break
+                }
+
+                case "membres": {
+                    const data = membres.map(m => ({
+                        nom_prenom: m.nom_prenom,
+                        email: m.email,
+                        telephone: m.telephone,
+                        statut: m.statut,
+                        role: [
+                            m.role_joueur ? "Joueur" : "",
+                            m.role_bureau ? "Bureau" : ""
+                        ].filter(Boolean).join(" + ") || "N/A",
+                        fonction_bureau: m.fonction_bureau || "-",
+                        cotisation_mensuelle: m.cotisation_mensuelle,
+                        date_entree: m.date_entree,
+                    }))
+                    await exportToExcel(data, EXCEL_COLUMNS.membres, {
+                        title: "Liste des Membres",
+                        subtitle: `Panthères de Fès • ${membres.length} membres`,
+                        filename: "membres_pantheres",
+                        sheetName: "Membres",
+                    })
+                    toast.success("Export Excel réussi! 📊", {
+                        description: `${data.length} membres avec mise en forme`
+                    })
+                    break
+                }
+
+                case "cotisations": {
+                    await exportToExcel(cotisations, EXCEL_COLUMNS.cotisations, {
+                        title: "État des Cotisations",
+                        subtitle: `Panthères de Fès • Taux de recouvrement: ${stats.tauxRecouvrement.toFixed(0)}%`,
+                        filename: "cotisations_pantheres",
+                        sheetName: "Cotisations",
+                    })
+                    toast.success("Export Excel réussi! 📊", {
+                        description: `${cotisations.length} lignes avec mise en forme`
+                    })
+                    break
+                }
+            }
+        } catch (error) {
+            console.error("Erreur export Excel:", error)
+            toast.error("Erreur lors de l'export Excel")
         } finally {
             setExportingType(null)
         }
@@ -137,7 +219,7 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
         {
             id: "transactions",
             title: "Journal des Transactions",
-            description: "Toutes les recettes et dépenses",
+            description: "Recettes et dépenses détaillées",
             icon: Receipt,
             count: transactions.length,
             color: "text-emerald-500",
@@ -169,7 +251,7 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Rapports & Exports</h1>
                 <p className="text-muted-foreground">
-                    Téléchargez vos données au format CSV (compatible Excel)
+                    Téléchargez vos données au format CSV ou Excel (avec mise en forme)
                 </p>
             </div>
 
@@ -245,14 +327,14 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
                             <CardTitle className="mt-4">{card.title}</CardTitle>
                             <CardDescription>{card.description}</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-2">
+                            {/* Bouton Excel (principal) */}
                             <Button
-                                variant="outline"
-                                className="w-full gap-2"
-                                onClick={() => handleExport(card.id)}
+                                className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                onClick={() => handleExportExcel(card.id)}
                                 disabled={exportingType !== null}
                             >
-                                {exportingType === card.id ? (
+                                {exportingType === `${card.id}-excel` ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                         Export en cours...
@@ -260,6 +342,26 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
                                 ) : (
                                     <>
                                         <FileSpreadsheet className="w-4 h-4" />
+                                        Télécharger Excel
+                                    </>
+                                )}
+                            </Button>
+
+                            {/* Bouton CSV (secondaire) */}
+                            <Button
+                                variant="outline"
+                                className="w-full gap-2"
+                                onClick={() => handleExportCSV(card.id)}
+                                disabled={exportingType !== null}
+                            >
+                                {exportingType === `${card.id}-csv` ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Export en cours...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileText className="w-4 h-4" />
                                         Télécharger CSV
                                     </>
                                 )}
@@ -270,18 +372,24 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
             </div>
 
             {/* Info Card */}
-            <Card className="border-dashed">
+            <Card className="border-amber-500/30 bg-amber-500/5">
                 <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                        <div className="p-2 rounded-lg bg-muted">
-                            <FileText className="w-5 h-5 text-muted-foreground" />
+                        <div className="p-2 rounded-lg bg-amber-500/10">
+                            <FileSpreadsheet className="w-5 h-5 text-amber-500" />
                         </div>
                         <div>
-                            <h3 className="font-semibold">Génération de rapports PDF</h3>
+                            <h3 className="font-semibold">Fichiers Excel stylisés</h3>
                             <p className="text-sm text-muted-foreground mt-1">
-                                La génération de rapports PDF personnalisés sera disponible dans une prochaine mise à jour.
-                                En attendant, vous pouvez ouvrir les fichiers CSV dans Excel pour les mettre en forme et imprimer.
+                                Les exports Excel incluent automatiquement :
                             </p>
+                            <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                                <li>En-tête avec le logo Panthères de Fès</li>
+                                <li>Couleurs alternées pour une meilleure lisibilité</li>
+                                <li>Statuts colorés (vert = OK, rouge = retard)</li>
+                                <li>Ligne de totaux automatique</li>
+                                <li>Formatage des montants et dates</li>
+                            </ul>
                         </div>
                     </div>
                 </CardContent>
