@@ -20,10 +20,12 @@ import {
     Loader2,
     TrendingUp,
     ChevronDown,
+    Printer,
 } from "lucide-react"
 import { toast } from "sonner"
 import { convertToCSV, downloadCSV, formatDateExport, formatMontantExport } from "@/lib/export"
 import { exportToExcel, EXCEL_COLUMNS } from "@/lib/export-excel"
+import { exportRapportFinancier, exportToPDF, PDF_COLUMNS } from "@/lib/export-pdf"
 
 interface Transaction {
     id: string
@@ -215,6 +217,81 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
         }
     }
 
+    // ===== EXPORT PDF =====
+    const handleExportPDF = async (type: string) => {
+        setExportingType(`${type}-pdf`)
+
+        try {
+            switch (type) {
+                case "transactions": {
+                    // Export rapport financier complet avec totaux
+                    await exportRapportFinancier(
+                        transactions.map(t => ({
+                            date: t.date,
+                            type: t.type,
+                            categorie: t.categorie,
+                            libelle: t.libelle,
+                            entree: t.entree,
+                            sortie: t.sortie,
+                        })),
+                        {
+                            totalRecettes: stats.totalRecettes,
+                            totalDepenses: stats.totalDepenses,
+                            solde: stats.solde,
+                        }
+                    )
+                    toast.success("PDF généré! 📄", {
+                        description: "Rapport financier avec graphiques"
+                    })
+                    break
+                }
+
+                case "membres": {
+                    const data = membres.map(m => ({
+                        nom_prenom: m.nom_prenom,
+                        telephone: m.telephone,
+                        email: m.email,
+                        statut: m.statut,
+                        cotisation_mensuelle: m.cotisation_mensuelle,
+                    }))
+                    await exportToPDF(data, PDF_COLUMNS.membres, {
+                        title: "Liste des Membres",
+                        subtitle: `${membres.length} membres • Saison 2025-2026`,
+                        filename: "membres_pantheres",
+                    })
+                    toast.success("PDF généré! 📄", {
+                        description: `${membres.length} membres exportés`
+                    })
+                    break
+                }
+
+                case "cotisations": {
+                    const data = cotisations.map(c => ({
+                        nom_prenom: c.nom_prenom,
+                        total_du: c.cotisation_mensuelle * 10, // Approximation
+                        total_paye: c.total_paye,
+                        reste_a_payer: c.reste_a_payer,
+                        etat_paiement: c.etat_paiement,
+                    }))
+                    await exportToPDF(data, PDF_COLUMNS.cotisations, {
+                        title: "État des Cotisations",
+                        subtitle: `Taux de recouvrement: ${stats.tauxRecouvrement.toFixed(0)}%`,
+                        filename: "cotisations_pantheres",
+                    })
+                    toast.success("PDF généré! 📄", {
+                        description: `${cotisations.length} lignes exportées`
+                    })
+                    break
+                }
+            }
+        } catch (error) {
+            console.error("Erreur export PDF:", error)
+            toast.error("Erreur lors de la génération du PDF")
+        } finally {
+            setExportingType(null)
+        }
+    }
+
     const exportCards = [
         {
             id: "transactions",
@@ -347,10 +424,30 @@ export function RapportsClient({ transactions, membres, cotisations, stats }: Ra
                                 )}
                             </Button>
 
-                            {/* Bouton CSV (secondaire) */}
+                            {/* Bouton PDF */}
                             <Button
                                 variant="outline"
-                                className="w-full gap-2"
+                                className="w-full gap-2 border-red-500/50 text-red-600 hover:bg-red-500/10"
+                                onClick={() => handleExportPDF(card.id)}
+                                disabled={exportingType !== null}
+                            >
+                                {exportingType === `${card.id}-pdf` ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Génération...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Printer className="w-4 h-4" />
+                                        Télécharger PDF
+                                    </>
+                                )}
+                            </Button>
+
+                            {/* Bouton CSV (secondaire) */}
+                            <Button
+                                variant="ghost"
+                                className="w-full gap-2 text-muted-foreground"
                                 onClick={() => handleExportCSV(card.id)}
                                 disabled={exportingType !== null}
                             >
