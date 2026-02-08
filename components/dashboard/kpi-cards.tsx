@@ -105,7 +105,7 @@ export function KPICards({ data }: KPICardsProps) {
                             <div className="flex items-start justify-between">
                                 <div className="space-y-1">
                                     <p className="text-sm text-muted-foreground">{kpi.title}</p>
-                                    <p className={cn("text-2xl font-bold tracking-tight", kpi.color)}>
+                                    <p className={cn("text-xl sm:text-2xl font-bold tracking-tight", kpi.color)}>
                                         {kpi.value}
                                     </p>
                                     {kpi.subtitle && (

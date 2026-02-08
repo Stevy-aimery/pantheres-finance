@@ -123,3 +123,100 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== RESPONSIVE OPTIMIZATIONS ===== */
+
+/* Smooth scrolling on iOS */
+html {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal overflow on mobile */
+body {
+  overflow-x: hidden;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 640px) {
+  /* Increase minimum touch target size */
+  button, 
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Better spacing for cards on mobile */
+  .space-y-6 {
+    gap: 1rem;
+  }
+
+  /* Reduce padding on mobile */
+  .p-6 {
+    padding: 1rem;
+  }
+
+  /* Full width buttons on mobile */
+  .gap-2 > button {
+    flex: 1;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Slightly reduce spacing */
+  .lg\:p-6 {
+    padding: 1.25rem;
+  }
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* Better focus states for accessibility */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Prevent text selection on buttons */
+button,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Disable transitions on page load */
+.no-transition * {
+  transition: none !important;
+}
+
+/* Table responsive improvements */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Card hover effects */
+.hover\:border-amber-500\/50:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+}
