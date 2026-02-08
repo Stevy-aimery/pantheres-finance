@@ -51,9 +51,11 @@ import {
     Calendar,
     Filter,
     Download,
+    FileSpreadsheet,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { convertToCSV, downloadCSV, formatDateExport, formatMontantExport } from "@/lib/export"
+import { exportToExcel, EXCEL_COLUMNS } from "@/lib/export-excel"
 import { deleteTransaction } from "./actions"
 import { toast } from "sonner"
 
@@ -215,9 +217,35 @@ export function TransactionsClient({
         const csv = convertToCSV(exportData, columns)
         const dateStr = new Date().toISOString().split("T")[0]
         downloadCSV(csv, `transactions_pantheres_${dateStr}`)
-        toast.success("Export réussi", {
+        toast.success("Export CSV réussi", {
             description: `${filteredTransactions.length} transactions exportées`,
         })
+    }
+
+    // Export Excel stylisé
+    const handleExportExcel = async () => {
+        const data = filteredTransactions.map(t => ({
+            date: t.date,
+            type: t.type === "Recette" ? "✅ Recette" : "📤 Dépense",
+            categorie: t.categorie,
+            description: t.libelle,
+            montant: t.type === "Recette" ? t.entree : -t.sortie,
+            mode_paiement: t.mode_paiement,
+        }))
+
+        try {
+            await exportToExcel(data, EXCEL_COLUMNS.transactions, {
+                title: "Journal des Transactions",
+                subtitle: `Panthères de Fès • Saison 2025-2026`,
+                filename: "transactions_pantheres",
+                sheetName: "Transactions",
+            })
+            toast.success("Export Excel réussi! 📊", {
+                description: `${data.length} transactions avec mise en forme`,
+            })
+        } catch (error) {
+            toast.error("Erreur lors de l'export Excel")
+        }
     }
 
     return (
@@ -231,15 +259,28 @@ export function TransactionsClient({
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        className="gap-2"
-                        onClick={handleExportCSV}
-                        disabled={filteredTransactions.length === 0}
-                    >
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Exporter CSV</span>
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="gap-2"
+                                disabled={filteredTransactions.length === 0}
+                            >
+                                <Download className="w-4 h-4" />
+                                <span className="hidden sm:inline">Exporter</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleExportExcel}>
+                                <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-500" />
+                                Excel (stylisé)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleExportCSV}>
+                                <Download className="w-4 h-4 mr-2" />
+                                CSV (simple)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Link href="/dashboard/transactions/nouvelle">
                         <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
                             <Plus className="w-4 h-4" />
