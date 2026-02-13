@@ -58,6 +58,7 @@ import { convertToCSV, downloadCSV, formatDateExport, formatMontantExport } from
 import { exportToExcel, EXCEL_COLUMNS } from "@/lib/export-excel"
 import { deleteTransaction } from "./actions"
 import { toast } from "sonner"
+import { TresorierOnly, ExportButton, useRole } from "@/lib/permissions"
 
 interface Transaction {
     id: string
@@ -259,34 +260,38 @@ export function TransactionsClient({
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="gap-2"
-                                disabled={filteredTransactions.length === 0}
-                            >
-                                <Download className="w-4 h-4" />
-                                <span className="hidden sm:inline">Exporter</span>
+                    <ExportButton>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2"
+                                    disabled={filteredTransactions.length === 0}
+                                >
+                                    <Download className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Exporter</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleExportExcel}>
+                                    <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-500" />
+                                    Excel (stylisé)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleExportCSV}>
+                                    <Download className="w-4 h-4 mr-2" />
+                                    CSV (simple)
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </ExportButton>
+                    <TresorierOnly>
+                        <Link href="/dashboard/transactions/nouvelle">
+                            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                                <Plus className="w-4 h-4" />
+                                Nouvelle transaction
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleExportExcel}>
-                                <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-500" />
-                                Excel (stylisé)
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleExportCSV}>
-                                <Download className="w-4 h-4 mr-2" />
-                                CSV (simple)
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Link href="/dashboard/transactions/nouvelle">
-                        <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                            <Plus className="w-4 h-4" />
-                            Nouvelle transaction
-                        </Button>
-                    </Link>
+                        </Link>
+                    </TresorierOnly>
                 </div>
             </div>
 
@@ -514,33 +519,35 @@ export function TransactionsClient({
                                                     <span className="text-muted-foreground">-</span>
                                                 )}
                                             </TableCell>
-                                            <TableCell>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/dashboard/transactions/${transaction.id}`}>
-                                                                <Pencil className="mr-2 h-4 w-4" />
-                                                                Modifier
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => {
-                                                                setTransactionToDelete(transaction)
-                                                                setDeleteDialogOpen(true)
-                                                            }}
-                                                        >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Supprimer
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
+                                            <TresorierOnly>
+                                                <TableCell>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/dashboard/transactions/${transaction.id}`}>
+                                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                                    Modifier
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => {
+                                                                    setTransactionToDelete(transaction)
+                                                                    setDeleteDialogOpen(true)
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Supprimer
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TresorierOnly>
                                         </TableRow>
                                     )
                                 })}

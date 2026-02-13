@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { MembreDetailModal } from "@/components/dashboard/membre-detail-modal"
 import { toast } from "sonner"
+import { TresorierOnly } from "@/lib/permissions"
 
 interface Membre {
     id: string
@@ -221,12 +222,14 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                     <h1 className="text-2xl font-bold tracking-tight">Membres</h1>
                     <p className="text-muted-foreground">Gérez les joueurs et membres du bureau</p>
                 </div>
-                <Link href="/dashboard/membres/nouveau">
-                    <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                        <Plus className="w-4 h-4" />
-                        Nouveau membre
-                    </Button>
-                </Link>
+                <TresorierOnly>
+                    <Link href="/dashboard/membres/nouveau">
+                        <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                            <Plus className="w-4 h-4" />
+                            Nouveau membre
+                        </Button>
+                    </Link>
+                </TresorierOnly>
             </div>
 
             {/* Stats Cards */}
@@ -413,34 +416,36 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                                                 </div>
                                             </TableCell>
                                             <TableCell>{getStatutBadge(membre.statut)}</TableCell>
-                                            <TableCell onClick={(e) => e.stopPropagation()}>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/dashboard/membres/${membre.id}`}>
-                                                                <Pencil className="mr-2 h-4 w-4" />
-                                                                Modifier
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                setMembreToDelete(membre)
-                                                                setDeleteDialogOpen(true)
-                                                            }}
-                                                        >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Supprimer
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
+                                            <TresorierOnly>
+                                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/dashboard/membres/${membre.id}`}>
+                                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                                    Modifier
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    setMembreToDelete(membre)
+                                                                    setDeleteDialogOpen(true)
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Supprimer
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TresorierOnly>
                                         </TableRow>
                                     )
                                 })}

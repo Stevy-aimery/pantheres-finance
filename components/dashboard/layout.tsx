@@ -30,33 +30,37 @@ import {
     Moon,
     Sun,
     Shield,
+    MessageSquare,
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { RoleProvider, Permission, PERMISSIONS, UserRole } from "@/lib/permissions"
+import { RoleProvider, UserRole, NAVIGATION_BY_ROLE } from "@/lib/permissions"
 
 interface DashboardLayoutProps {
     children: React.ReactNode
     user: User
     role: string
+    fonctionBureau?: string | null
+    memberId?: string | null
 }
 
-// Navigation avec permissions requises
-const navigation: {
-    name: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    requiredPermission?: Permission
-    roles?: UserRole[]
-}[] = [
-        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-        { name: "Membres", href: "/dashboard/membres", icon: Users, requiredPermission: PERMISSIONS.VIEW_MEMBRES },
-        { name: "Transactions", href: "/dashboard/transactions", icon: Receipt, requiredPermission: PERMISSIONS.VIEW_TRANSACTIONS },
-        { name: "Budget", href: "/dashboard/budget", icon: PiggyBank, requiredPermission: PERMISSIONS.VIEW_BUDGET },
-        { name: "Rapports", href: "/dashboard/rapports", icon: FileText, requiredPermission: PERMISSIONS.VIEW_RAPPORTS },
-        { name: "Paramètres", href: "/dashboard/parametres", icon: Settings, requiredPermission: PERMISSIONS.MANAGE_SETTINGS },
-    ]
+// Navigation complète avec icônes
+const allNavigation = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Membres", href: "/dashboard/membres", icon: Users },
+    { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
+    { name: "Budget", href: "/dashboard/budget", icon: PiggyBank },
+    { name: "Rapports", href: "/dashboard/rapports", icon: FileText },
+    { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+    { name: "Paramètres", href: "/dashboard/parametres", icon: Settings },
+]
 
-export function DashboardLayout({ children, user, role }: DashboardLayoutProps) {
+export function DashboardLayout({
+    children,
+    user,
+    role,
+    fonctionBureau = null,
+    memberId = null
+}: DashboardLayoutProps) {
     const pathname = usePathname()
     const router = useRouter()
     const supabase = createClient()
@@ -84,36 +88,16 @@ export function DashboardLayout({ children, user, role }: DashboardLayoutProps) 
     const roleBadge = getRoleBadge(role)
     const userRole = (role as UserRole) || "joueur"
 
-    // Matrice des permissions par rôle (pour filtrer la navigation)
-    const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-        tresorier: [
-            PERMISSIONS.VIEW_TRANSACTIONS,
-            PERMISSIONS.VIEW_MEMBRES,
-            PERMISSIONS.VIEW_BUDGET,
-            PERMISSIONS.VIEW_RAPPORTS,
-            PERMISSIONS.MANAGE_SETTINGS,
-        ],
-        bureau: [
-            PERMISSIONS.VIEW_TRANSACTIONS,
-            PERMISSIONS.VIEW_MEMBRES,
-            PERMISSIONS.VIEW_BUDGET,
-            PERMISSIONS.VIEW_RAPPORTS,
-        ],
-        joueur: [
-            PERMISSIONS.VIEW_MEMBRES,
-        ],
-    }
+    // Obtenir les chemins autorisés pour ce rôle
+    const allowedPaths = NAVIGATION_BY_ROLE[userRole] || []
 
-    const hasPermission = (permission?: Permission): boolean => {
-        if (!permission) return true // Dashboard toujours accessible
-        return ROLE_PERMISSIONS[userRole]?.includes(permission) ?? false
-    }
-
-    // Filtrer la navigation selon les permissions
-    const filteredNavigation = navigation.filter(item => hasPermission(item.requiredPermission))
+    // Filtrer la navigation selon le rôle
+    const filteredNavigation = allNavigation.filter(item =>
+        allowedPaths.includes(item.href)
+    )
 
     return (
-        <RoleProvider role={role}>
+        <RoleProvider role={role} fonctionBureau={fonctionBureau} memberId={memberId}>
             <div className="min-h-screen bg-background">
                 {/* Mobile sidebar backdrop */}
                 {sidebarOpen && (
@@ -207,14 +191,19 @@ export function DashboardLayout({ children, user, role }: DashboardLayoutProps) 
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
                                     {theme === "dark" ? (
-                                        <Sun className="mr-2 h-4 w-4" />
+                                        <>
+                                            <Sun className="mr-2 h-4 w-4" />
+                                            Mode clair
+                                        </>
                                     ) : (
-                                        <Moon className="mr-2 h-4 w-4" />
+                                        <>
+                                            <Moon className="mr-2 h-4 w-4" />
+                                            Mode sombre
+                                        </>
                                     )}
-                                    {theme === "dark" ? "Mode clair" : "Mode sombre"}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                                <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                                     <LogOut className="mr-2 h-4 w-4" />
                                     Déconnexion
                                 </DropdownMenuItem>
@@ -228,24 +217,25 @@ export function DashboardLayout({ children, user, role }: DashboardLayoutProps) 
                     "transition-all duration-300",
                     sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-64"
                 )}>
-                    {/* Top header (mobile) */}
-                    <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-sm border-b border-border lg:hidden">
-                        <div className="flex items-center justify-between h-full px-4">
+                    {/* Top bar */}
+                    <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setSidebarOpen(true)}
-                                className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
+                                className="p-2 -ml-2 lg:hidden hover:bg-accent rounded-lg"
                             >
-                                <Menu className="w-6 h-6" />
+                                <Menu className="w-5 h-5" />
                             </button>
+                            <h2 className="font-semibold text-lg hidden sm:block">
+                                {filteredNavigation.find(item =>
+                                    pathname === item.href ||
+                                    (item.href !== "/dashboard" && pathname.startsWith(item.href))
+                                )?.name || "Dashboard"}
+                            </h2>
+                        </div>
 
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-                                    <Shield className="w-4 h-4 text-white" />
-                                </div>
-                                <span className="font-bold text-sm">Panthères Finance</span>
-                            </div>
-
-                            <Avatar className="h-8 w-8">
+                        <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8 lg:hidden">
                                 <AvatarFallback className="bg-amber-500/20 text-amber-500 text-xs">
                                     {userInitials}
                                 </AvatarFallback>
