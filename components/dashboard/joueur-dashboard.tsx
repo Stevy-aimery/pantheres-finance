@@ -3,6 +3,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import {
     User,
     Mail,
@@ -13,6 +22,10 @@ import {
     AlertCircle,
     Clock,
     TrendingUp,
+    Wallet,
+    BadgeCheck,
+    Banknote,
+    Receipt,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -43,227 +56,271 @@ interface JoueurDashboardProps {
 }
 
 export function JoueurDashboard({ membre, cotisation, paiements }: JoueurDashboardProps) {
-    const getStatutBadge = (statut: string) => {
-        switch (statut) {
-            case "Actif":
-                return <Badge className="bg-emerald-500/20 text-emerald-500">Actif</Badge>
-            case "Inactif":
-                return <Badge className="bg-red-500/20 text-red-500">Inactif</Badge>
-            default:
-                return <Badge variant="secondary">{statut}</Badge>
-        }
-    }
+    const firstName = membre.nom_prenom.split(" ")[0]
+    const initials = membre.nom_prenom.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
 
-    const getEtatIcon = (etat: string) => {
-        switch (etat) {
-            case "À jour":
-                return <CheckCircle className="w-5 h-5 text-emerald-500" />
-            case "Retard":
-                return <AlertCircle className="w-5 h-5 text-red-500" />
-            case "Partiel":
-                return <Clock className="w-5 h-5 text-amber-500" />
-            default:
-                return <CreditCard className="w-5 h-5 text-muted-foreground" />
-        }
-    }
+    const isAJour = cotisation.etat_paiement === "À jour"
+    const isRetard = cotisation.etat_paiement === "Retard"
+    const isPartiel = cotisation.etat_paiement === "Partiel"
 
-    const getEtatColor = (etat: string) => {
-        switch (etat) {
-            case "À jour":
-                return "text-emerald-500"
-            case "Retard":
-                return "text-red-500"
-            case "Partiel":
-                return "text-amber-500"
-            default:
-                return "text-muted-foreground"
-        }
-    }
+    const statusColor = isAJour ? "emerald" : isRetard ? "red" : "amber"
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat("fr-MA", { style: "decimal", minimumFractionDigits: 0 }).format(amount) + " MAD"
+
+    const formatDate = (dateString: string) =>
+        new Date(dateString).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
 
     return (
-        <div className="space-y-6">
-            {/* Header personnalisé */}
-            <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                    {membre.nom_prenom.split(" ").map(n => n[0]).join("").slice(0, 2)}
+        <div className="space-y-8">
+            {/* ==================== HEADER ==================== */}
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 p-6 md:p-8 text-white">
+                {/* Background pattern */}
+                <div className="absolute inset-0 opacity-10">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/20" />
+                    <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-white/15" />
+                    <div className="absolute top-1/2 right-1/4 w-20 h-20 rounded-full bg-white/10" />
                 </div>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Bienvenue, {membre.nom_prenom.split(" ")[0]} 👋
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Voici votre espace personnel
-                    </p>
+
+                <div className="relative flex items-center gap-5">
+                    <div className="w-18 h-18 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-bold border border-white/30 shadow-lg">
+                        {initials}
+                    </div>
+                    <div>
+                        <p className="text-white/80 text-sm font-medium">Bienvenue 👋</p>
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                            {firstName}
+                        </h1>
+                        <p className="text-white/70 text-sm mt-1">
+                            Votre espace personnel · Saison 2025-2026
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            {/* Carte statut cotisation */}
-            <Card className={cn(
-                "border-2",
-                cotisation.etat_paiement === "À jour" && "border-emerald-500/30 bg-emerald-500/5",
-                cotisation.etat_paiement === "Retard" && "border-red-500/30 bg-red-500/5",
-                cotisation.etat_paiement === "Partiel" && "border-amber-500/30 bg-amber-500/5",
-            )}>
-                <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            {getEtatIcon(cotisation.etat_paiement)}
-                            Statut de cotisation
-                        </CardTitle>
-                        <Badge className={cn(
-                            "text-sm px-3 py-1",
-                            cotisation.etat_paiement === "À jour" && "bg-emerald-500 text-white",
-                            cotisation.etat_paiement === "Retard" && "bg-red-500 text-white",
-                            cotisation.etat_paiement === "Partiel" && "bg-amber-500 text-white",
-                        )}>
-                            {cotisation.etat_paiement}
-                        </Badge>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-3 rounded-lg bg-background">
-                            <p className="text-2xl font-bold text-emerald-500">
-                                {cotisation.total_paye.toFixed(0)} MAD
-                            </p>
-                            <p className="text-xs text-muted-foreground">Total payé</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-background">
-                            <p className="text-2xl font-bold text-muted-foreground">
-                                {cotisation.total_du.toFixed(0)} MAD
-                            </p>
-                            <p className="text-xs text-muted-foreground">Total dû</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-background">
-                            <p className={cn("text-2xl font-bold", getEtatColor(cotisation.etat_paiement))}>
-                                {cotisation.reste_a_payer.toFixed(0)} MAD
-                            </p>
-                            <p className="text-xs text-muted-foreground">Reste à payer</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-background">
-                            <p className="text-2xl font-bold text-amber-500">
-                                {membre.cotisation_mensuelle.toFixed(0)} MAD
-                            </p>
-                            <p className="text-xs text-muted-foreground">/ mois</p>
-                        </div>
-                    </div>
-
-                    {/* Barre de progression */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span>Progression des paiements</span>
-                            <span className="font-medium">{cotisation.pourcentage_paye.toFixed(0)}%</span>
-                        </div>
-                        <Progress
-                            value={cotisation.pourcentage_paye}
-                            className={cn(
-                                "h-3",
-                                cotisation.etat_paiement === "À jour" && "[&>div]:bg-emerald-500",
-                                cotisation.etat_paiement === "Retard" && "[&>div]:bg-red-500",
-                                cotisation.etat_paiement === "Partiel" && "[&>div]:bg-amber-500",
-                            )}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-                {/* Informations personnelles */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <User className="w-5 h-5 text-amber-500" />
-                            Mes informations
-                        </CardTitle>
-                        <CardDescription>Vos coordonnées enregistrées</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <User className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Nom complet</p>
-                                <p className="font-medium">{membre.nom_prenom}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Email</p>
-                                <p className="font-medium">{membre.email}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <Phone className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Téléphone</p>
-                                <p className="font-medium">{membre.telephone}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Membre depuis</p>
-                                <p className="font-medium">
-                                    {new Date(membre.date_entree).toLocaleDateString("fr-FR", {
-                                        day: "numeric",
-                                        month: "long",
-                                        year: "numeric",
-                                    })}
+            {/* ==================== KPI CARDS ==================== */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Total payé */}
+                <Card className="group hover:shadow-md transition-all duration-200">
+                    <CardContent className="p-5">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground font-medium">Total cotisations</p>
+                                <p className="text-3xl font-bold text-emerald-500">
+                                    {formatCurrency(cotisation.total_paye)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    sur {formatCurrency(cotisation.total_du)} dû
                                 </p>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Statut</p>
-                                {getStatutBadge(membre.statut)}
+                            <div className="p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/15 transition-colors">
+                                <Wallet className="w-6 h-6 text-emerald-500" />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Historique des paiements */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <CreditCard className="w-5 h-5 text-emerald-500" />
-                            Mes paiements
-                        </CardTitle>
-                        <CardDescription>Historique de vos cotisations versées</CardDescription>
+                {/* Statut cotisation */}
+                <Card className={cn(
+                    "group hover:shadow-md transition-all duration-200 border-l-4",
+                    isAJour && "border-l-emerald-500",
+                    isRetard && "border-l-red-500",
+                    isPartiel && "border-l-amber-500",
+                )}>
+                    <CardContent className="p-5">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground font-medium">Statut cotisation</p>
+                                <Badge className={cn(
+                                    "text-sm px-3 py-1 font-semibold",
+                                    isAJour && "bg-emerald-500 hover:bg-emerald-600 text-white",
+                                    isRetard && "bg-red-500 hover:bg-red-600 text-white",
+                                    isPartiel && "bg-amber-500 hover:bg-amber-600 text-white",
+                                )}>
+                                    {isAJour && <CheckCircle className="w-3.5 h-3.5 mr-1.5" />}
+                                    {isRetard && <AlertCircle className="w-3.5 h-3.5 mr-1.5" />}
+                                    {isPartiel && <Clock className="w-3.5 h-3.5 mr-1.5" />}
+                                    {cotisation.etat_paiement}
+                                </Badge>
+                                {cotisation.reste_a_payer > 0 && (
+                                    <p className={cn("text-xs font-medium", `text-${statusColor}-500`)}>
+                                        Reste : {formatCurrency(cotisation.reste_a_payer)}
+                                    </p>
+                                )}
+                            </div>
+                            <div className={cn(
+                                "p-3 rounded-xl transition-colors",
+                                `bg-${statusColor}-500/10 group-hover:bg-${statusColor}-500/15`
+                            )}>
+                                <BadgeCheck className={cn("w-6 h-6", `text-${statusColor}-500`)} />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Cotisation mensuelle */}
+                <Card className="group hover:shadow-md transition-all duration-200 sm:col-span-2 lg:col-span-1">
+                    <CardContent className="p-5">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground font-medium">Cotisation mensuelle</p>
+                                <p className="text-3xl font-bold text-amber-500">
+                                    {formatCurrency(membre.cotisation_mensuelle)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">/mois</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/15 transition-colors">
+                                <Banknote className="w-6 h-6 text-amber-500" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* ==================== PROGRESS BAR ==================== */}
+            <Card>
+                <CardContent className="p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Progression des paiements</p>
+                        <span className={cn(
+                            "text-sm font-bold",
+                            isAJour ? "text-emerald-500" : isRetard ? "text-red-500" : "text-amber-500"
+                        )}>
+                            {cotisation.pourcentage_paye.toFixed(0)}%
+                        </span>
+                    </div>
+                    <Progress
+                        value={cotisation.pourcentage_paye}
+                        className={cn(
+                            "h-3 rounded-full",
+                            isAJour && "[&>div]:bg-emerald-500",
+                            isRetard && "[&>div]:bg-red-500",
+                            isPartiel && "[&>div]:bg-amber-500",
+                        )}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{formatCurrency(cotisation.total_paye)} payé</span>
+                        <span>{formatCurrency(cotisation.total_du)} total</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* ==================== HISTORIQUE + PROFIL ==================== */}
+            <div className="grid gap-6 lg:grid-cols-5">
+                {/* Historique des transactions (3/5) */}
+                <Card className="lg:col-span-3">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                            <Receipt className="w-5 h-5 text-amber-500" />
+                            <CardTitle className="text-lg">Historique des paiements</CardTitle>
+                        </div>
+                        <CardDescription>Détail de vos cotisations versées</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {paiements.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                <p>Aucun paiement enregistré</p>
+                            <div className="text-center py-12 text-muted-foreground">
+                                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                <p className="font-medium">Aucun paiement enregistré</p>
+                                <p className="text-sm">Vos paiements apparaîtront ici</p>
                             </div>
                         ) : (
-                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                                {paiements.map((paiement) => (
-                                    <div
-                                        key={paiement.id}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">{paiement.mois}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {new Date(paiement.date_paiement).toLocaleDateString("fr-FR")}
-                                                    {" • "}
-                                                    {paiement.mode_paiement}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span className="font-semibold text-emerald-500">
-                                            +{paiement.montant.toFixed(0)} MAD
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
+                            <ScrollArea className="max-h-[400px]">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableHead className="text-xs font-semibold">Date</TableHead>
+                                            <TableHead className="text-xs font-semibold">Motif</TableHead>
+                                            <TableHead className="text-xs font-semibold">Mode</TableHead>
+                                            <TableHead className="text-xs font-semibold text-right">Montant</TableHead>
+                                            <TableHead className="text-xs font-semibold text-center">Statut</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paiements.map((paiement) => (
+                                            <TableRow key={paiement.id} className="group">
+                                                <TableCell className="text-sm">
+                                                    {formatDate(paiement.date_paiement)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="text-sm font-medium">{paiement.mois}</span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary" className="text-xs font-normal">
+                                                        {paiement.mode_paiement}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <span className="text-sm font-semibold text-emerald-500">
+                                                        +{formatCurrency(paiement.montant)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge className="bg-emerald-500/10 text-emerald-500 border-0 text-xs">
+                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                        Payé
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </ScrollArea>
                         )}
+                    </CardContent>
+                </Card>
+
+                {/* Section Profil (2/5) */}
+                <Card className="lg:col-span-2">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                            <User className="w-5 h-5 text-amber-500" />
+                            <CardTitle className="text-lg">Mon profil</CardTitle>
+                        </div>
+                        <CardDescription>Vos informations personnelles</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {[
+                            { icon: User, label: "Nom complet", value: membre.nom_prenom },
+                            { icon: Mail, label: "Email", value: membre.email },
+                            { icon: Phone, label: "Téléphone", value: membre.telephone },
+                            {
+                                icon: Calendar,
+                                label: "Membre depuis",
+                                value: new Date(membre.date_entree).toLocaleDateString("fr-FR", {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                }),
+                            },
+                        ].map(({ icon: Icon, label, value }) => (
+                            <div key={label} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                                <div className="p-2 rounded-lg bg-background">
+                                    <Icon className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs text-muted-foreground">{label}</p>
+                                    <p className="text-sm font-medium truncate">{value}</p>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Statut */}
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                            <div className="p-2 rounded-lg bg-background">
+                                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Statut</p>
+                                <Badge className={cn(
+                                    "mt-0.5",
+                                    membre.statut === "Actif" && "bg-emerald-500/10 text-emerald-500 border-0",
+                                    membre.statut === "Blessé" && "bg-amber-500/10 text-amber-500 border-0",
+                                    membre.statut === "Arrêt/Départ" && "bg-red-500/10 text-red-500 border-0",
+                                )}>
+                                    {membre.statut}
+                                </Badge>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

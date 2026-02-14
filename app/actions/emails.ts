@@ -28,7 +28,7 @@ export async function envoyerRelanceCotisation(membreId: string) {
             from: EMAIL_FROM,
             to: [membre.email],
             subject: `Rappel Cotisation - Panthères de Fès`,
-            react: EmailRelanceCotisation({
+            react: await EmailRelanceCotisation({
                 nomMembre: membre.nom_prenom,
                 montant: membre.cotisation_mensuelle,
                 mois: moisActuel,
@@ -108,7 +108,7 @@ export async function envoyerConfirmationPaiement(membreId: string, paiementId: 
             from: EMAIL_FROM,
             to: [membre.email],
             subject: `Confirmation de Paiement - Panthères de Fès`,
-            react: EmailConfirmationPaiement({
+            react: await EmailConfirmationPaiement({
                 nomMembre: membre.nom_prenom,
                 montant: paiement.montant,
                 mois: moisNom,
@@ -190,7 +190,7 @@ export async function envoyerRapportMensuel() {
                 from: EMAIL_FROM,
                 to: [membre.email],
                 subject: `Rapport Financier Mensuel - ${moisNom}`,
-                react: EmailRapportMensuel({
+                react: await EmailRapportMensuel({
                     mois: moisNom,
                     soldeActuel: kpis?.solde_actuel || 0,
                     tauxRecouvrement: kpis?.taux_recouvrement || 0,
