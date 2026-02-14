@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { requireTresorier } from "@/lib/auth-guard"
 
 export interface TransactionFormData {
     date: string
@@ -17,6 +18,9 @@ export interface TransactionFormData {
 
 // Version sans redirect pour permettre les toasts côté client
 export async function createTransactionAction(data: TransactionFormData) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
+
     const supabase = await createClient()
 
     // Calculer entrée ou sortie selon le type
@@ -45,6 +49,9 @@ export async function createTransactionAction(data: TransactionFormData) {
 }
 
 export async function updateTransactionAction(id: string, data: TransactionFormData) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
+
     const supabase = await createClient()
 
     const entree = data.type === "Recette" ? data.montant : 0
@@ -75,6 +82,9 @@ export async function updateTransactionAction(id: string, data: TransactionFormD
 }
 
 export async function deleteTransaction(id: string) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
+
     const supabase = await createClient()
 
     const { error } = await supabase.from("transactions").delete().eq("id", id)

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { requireTresorier } from "@/lib/auth-guard"
 
 export type MembreFormData = {
     nom_prenom: string
@@ -16,6 +17,9 @@ export type MembreFormData = {
 }
 
 export async function createMembre(data: MembreFormData) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier." } }
+
     const supabase = await createClient()
 
     const { data: membre, error } = await supabase
@@ -33,6 +37,9 @@ export async function createMembre(data: MembreFormData) {
 }
 
 export async function updateMembre(id: string, data: MembreFormData) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier." } }
+
     const supabase = await createClient()
 
     const { error } = await supabase
@@ -49,6 +56,9 @@ export async function updateMembre(id: string, data: MembreFormData) {
 }
 
 export async function deleteMembre(id: string) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier." } }
+
     const supabase = await createClient()
 
     const { error } = await supabase

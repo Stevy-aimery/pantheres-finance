@@ -1,6 +1,38 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// ===== ROUTES AUTORISÉES PAR RÔLE =====
+const ROUTES_BY_ROLE: Record<string, string[]> = {
+    tresorier: [
+        "/dashboard",
+        "/dashboard/membres",
+        "/dashboard/transactions",
+        "/dashboard/budget",
+        "/dashboard/rapports",
+        "/dashboard/messages",
+        "/dashboard/parametres",
+    ],
+    bureau: [
+        "/dashboard",
+        "/dashboard/membres",
+        "/dashboard/transactions",
+        "/dashboard/budget",
+        "/dashboard/rapports",
+        "/dashboard/messages",
+    ],
+    joueur: [
+        "/dashboard",
+        "/dashboard/messages",
+    ],
+}
+
+function isRouteAllowed(role: string, pathname: string): boolean {
+    const allowedRoutes = ROUTES_BY_ROLE[role] || ROUTES_BY_ROLE.joueur
+    return allowedRoutes.some(route =>
+        pathname === route || pathname.startsWith(route + "/")
+    )
+}
+
 export async function middleware(request: NextRequest) {
     let response = NextResponse.next({
         request: {
@@ -74,6 +106,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
+    // 🔒 RBAC : Vérification des routes par rôle
+    if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+        const role = (user.user_metadata?.role as string) || 'joueur'
+
+        if (!isRouteAllowed(role, request.nextUrl.pathname)) {
+            // Rediriger vers le dashboard (page autorisée pour tous)
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+    }
+
     return response
 }
 
@@ -89,3 +131,4 @@ export const config = {
         '/((?!_next/static|_next/image|favicon.ico|api).*)',
     ],
 }
+

@@ -159,16 +159,37 @@ export default async function DashboardPage() {
 
     const role = user?.user_metadata?.role || "joueur"
 
-    // Si joueur, afficher dashboard personnel
-    if (role === "joueur" && user?.email) {
-        const joueurData = await getJoueurData(user.email)
+    // 🔒 Si joueur, afficher UNIQUEMENT le dashboard personnel
+    // Ne JAMAIS afficher le dashboard global pour un joueur
+    if (role === "joueur") {
+        if (user?.email) {
+            const joueurData = await getJoueurData(user.email)
 
-        if (joueurData) {
-            return <JoueurDashboard {...joueurData} />
+            if (joueurData) {
+                return <JoueurDashboard {...joueurData} />
+            }
         }
+
+        // État d'erreur : joueur non lié à un membre
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                </div>
+                <div className="text-center space-y-2">
+                    <h2 className="text-xl font-semibold">Compte non configuré</h2>
+                    <p className="text-muted-foreground max-w-md">
+                        Votre compte n&apos;est pas encore associé à un membre du club.
+                        Veuillez contacter le Trésorier pour finaliser votre inscription.
+                    </p>
+                </div>
+            </div>
+        )
     }
 
-    // Dashboard global pour Trésorier et Bureau
+    // Dashboard global pour Trésorier et Bureau uniquement
     const kpis = await getKPIs()
     const transactions = await getRecentTransactions()
     const cotisations = await getCotisationsStatus()

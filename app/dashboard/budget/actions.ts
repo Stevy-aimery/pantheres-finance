@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { requireTresorier } from "@/lib/auth-guard"
 
 export interface BudgetFormData {
     categorie: string
@@ -12,6 +13,9 @@ export interface BudgetFormData {
 }
 
 export async function createBudget(data: BudgetFormData) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
+
     const supabase = await createClient()
 
     const { error } = await supabase.from("budget").insert({
@@ -31,6 +35,9 @@ export async function createBudget(data: BudgetFormData) {
 }
 
 export async function updateBudget(id: string, data: BudgetFormData) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
+
     const supabase = await createClient()
 
     const { error } = await supabase
@@ -53,6 +60,9 @@ export async function updateBudget(id: string, data: BudgetFormData) {
 }
 
 export async function deleteBudget(id: string) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
+
     const supabase = await createClient()
 
     const { error } = await supabase.from("budget").delete().eq("id", id)
