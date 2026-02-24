@@ -1,10 +1,17 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { RapportsClient } from "./rapports-client"
 
 export const dynamic = "force-dynamic"
 
 export default async function RapportsPage() {
     const supabase = await createClient()
+
+    // 🔒 Vérification du rôle — Trésorier ou Bureau uniquement
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/login")
+    const role = user.user_metadata?.role || "joueur"
+    if (role === "joueur") redirect("/dashboard")
 
     // Récupérer les transactions
     const { data: transactions } = await supabase

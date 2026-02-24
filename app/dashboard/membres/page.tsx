@@ -1,7 +1,17 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { MembresClient } from "./membres-client"
 
 export const dynamic = "force-dynamic"
+
+async function requireBureauOrTresorier() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/login")
+    const role = user.user_metadata?.role || "joueur"
+    if (role === "joueur") redirect("/dashboard")
+    return supabase
+}
 
 async function getMembres() {
     const supabase = await createClient()
@@ -41,6 +51,8 @@ async function getEtatCotisations() {
 }
 
 export default async function MembresPage() {
+    await requireBureauOrTresorier()
+
     const membres = await getMembres()
     const cotisations = await getEtatCotisations()
 

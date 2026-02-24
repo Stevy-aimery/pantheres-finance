@@ -1,9 +1,10 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import type { UserRole } from "@/lib/types"
 
-// ===== TYPES =====
-export type UserRole = "tresorier" | "bureau" | "joueur"
+// Réexport pour les consommateurs existants
+export type { UserRole }
 
 export interface AuthContext {
     user: {

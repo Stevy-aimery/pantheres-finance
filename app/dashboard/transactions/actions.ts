@@ -3,45 +3,44 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { requireTresorier } from "@/lib/auth-guard"
+import { transactionSchema, uuidSchema, formatZodErrors } from "@/lib/validations"
+import type { TransactionFormData } from "@/lib/validations"
 
-export interface TransactionFormData {
-    date: string
-    type: "Recette" | "Dépense"
-    categorie: string
-    sous_categorie?: string
-    tiers?: string
-    membre_id?: string
-    libelle: string
-    montant: number
-    mode_paiement: string
-}
+// Réexport du type pour les composants existants
+export type { TransactionFormData }
 
-// Version sans redirect pour permettre les toasts côté client
 export async function createTransactionAction(data: TransactionFormData) {
     // 🔒 Vérification backend : Trésorier uniquement
     try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
 
+    // 🛡️ Validation des données
+    const parsed = transactionSchema.safeParse(data)
+    if (!parsed.success) {
+        return { error: formatZodErrors(parsed.error), success: false }
+    }
+    const validated = parsed.data
+
     const supabase = await createClient()
 
-    // Calculer entrée ou sortie selon le type
-    const entree = data.type === "Recette" ? data.montant : 0
-    const sortie = data.type === "Dépense" ? data.montant : 0
+    const entree = validated.type === "Recette" ? validated.montant : 0
+    const sortie = validated.type === "Dépense" ? validated.montant : 0
 
     const { error } = await supabase.from("transactions").insert({
-        date: data.date,
-        type: data.type,
-        categorie: data.categorie,
-        sous_categorie: data.sous_categorie || null,
-        tiers: data.tiers || null,
-        membre_id: data.membre_id || null,
-        libelle: data.libelle,
+        date: validated.date,
+        type: validated.type,
+        categorie: validated.categorie,
+        sous_categorie: validated.sous_categorie || null,
+        tiers: validated.tiers || null,
+        membre_id: validated.membre_id || null,
+        libelle: validated.libelle,
         entree,
         sortie,
-        mode_paiement: data.mode_paiement,
+        mode_paiement: validated.mode_paiement,
     })
 
     if (error) {
-        return { error: error.message, success: false }
+        console.error("Erreur création transaction:", error.message)
+        return { error: "Erreur lors de la création de la transaction.", success: false }
     }
 
     revalidatePath("/dashboard/transactions")
@@ -52,29 +51,40 @@ export async function updateTransactionAction(id: string, data: TransactionFormD
     // 🔒 Vérification backend : Trésorier uniquement
     try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
 
+    // 🛡️ Validation des données
+    const idParsed = uuidSchema.safeParse(id)
+    if (!idParsed.success) { return { error: "ID de transaction invalide.", success: false } }
+
+    const parsed = transactionSchema.safeParse(data)
+    if (!parsed.success) {
+        return { error: formatZodErrors(parsed.error), success: false }
+    }
+    const validated = parsed.data
+
     const supabase = await createClient()
 
-    const entree = data.type === "Recette" ? data.montant : 0
-    const sortie = data.type === "Dépense" ? data.montant : 0
+    const entree = validated.type === "Recette" ? validated.montant : 0
+    const sortie = validated.type === "Dépense" ? validated.montant : 0
 
     const { error } = await supabase
         .from("transactions")
         .update({
-            date: data.date,
-            type: data.type,
-            categorie: data.categorie,
-            sous_categorie: data.sous_categorie || null,
-            tiers: data.tiers || null,
-            membre_id: data.membre_id || null,
-            libelle: data.libelle,
+            date: validated.date,
+            type: validated.type,
+            categorie: validated.categorie,
+            sous_categorie: validated.sous_categorie || null,
+            tiers: validated.tiers || null,
+            membre_id: validated.membre_id || null,
+            libelle: validated.libelle,
             entree,
             sortie,
-            mode_paiement: data.mode_paiement,
+            mode_paiement: validated.mode_paiement,
         })
-        .eq("id", id)
+        .eq("id", idParsed.data)
 
     if (error) {
-        return { error: error.message, success: false }
+        console.error("Erreur mise à jour transaction:", error.message)
+        return { error: "Erreur lors de la mise à jour de la transaction.", success: false }
     }
 
     revalidatePath("/dashboard/transactions")
@@ -85,12 +95,17 @@ export async function deleteTransaction(id: string) {
     // 🔒 Vérification backend : Trésorier uniquement
     try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
 
+    // 🛡️ Validation de l'ID
+    const idParsed = uuidSchema.safeParse(id)
+    if (!idParsed.success) { return { error: "ID de transaction invalide.", success: false } }
+
     const supabase = await createClient()
 
-    const { error } = await supabase.from("transactions").delete().eq("id", id)
+    const { error } = await supabase.from("transactions").delete().eq("id", idParsed.data)
 
     if (error) {
-        return { error: error.message, success: false }
+        console.error("Erreur suppression transaction:", error.message)
+        return { error: "Erreur lors de la suppression de la transaction.", success: false }
     }
 
     revalidatePath("/dashboard/transactions")

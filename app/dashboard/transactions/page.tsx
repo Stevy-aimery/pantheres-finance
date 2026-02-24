@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { TransactionsClient } from "./transactions-client"
 
 export default async function TransactionsPage() {
     const supabase = await createClient()
+
+    // 🔒 Vérification du rôle — Trésorier ou Bureau uniquement
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/login")
+    const role = user.user_metadata?.role || "joueur"
+    if (role === "joueur") redirect("/dashboard")
 
     // Récupérer les transactions avec tri par date décroissante
     const { data: transactions, error } = await supabase

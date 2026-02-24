@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { BudgetClient } from "./budget-client"
 
 export default async function BudgetPage() {
     const supabase = await createClient()
+
+    // 🔒 Vérification du rôle — Trésorier ou Bureau uniquement
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/login")
+    const role = user.user_metadata?.role || "joueur"
+    if (role === "joueur") redirect("/dashboard")
 
     // Définir la période par défaut (saison Mars-Juillet 2026)
     const currentYear = new Date().getFullYear()

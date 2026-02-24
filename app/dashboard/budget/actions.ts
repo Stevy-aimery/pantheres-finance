@@ -3,31 +3,36 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { requireTresorier } from "@/lib/auth-guard"
+import { budgetSchema, uuidSchema, formatZodErrors } from "@/lib/validations"
+import type { BudgetFormData } from "@/lib/validations"
 
-export interface BudgetFormData {
-    categorie: string
-    type: "Recette" | "Dépense"
-    budget_alloue: number
-    periode_debut: string
-    periode_fin: string
-}
+// Réexport du type pour les composants existants
+export type { BudgetFormData }
 
 export async function createBudget(data: BudgetFormData) {
     // 🔒 Vérification backend : Trésorier uniquement
     try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
 
+    // 🛡️ Validation des données
+    const parsed = budgetSchema.safeParse(data)
+    if (!parsed.success) {
+        return { error: formatZodErrors(parsed.error), success: false }
+    }
+    const validated = parsed.data
+
     const supabase = await createClient()
 
     const { error } = await supabase.from("budget").insert({
-        categorie: data.categorie,
-        type: data.type,
-        budget_alloue: data.budget_alloue,
-        periode_debut: data.periode_debut,
-        periode_fin: data.periode_fin,
+        categorie: validated.categorie,
+        type: validated.type,
+        budget_alloue: validated.budget_alloue,
+        periode_debut: validated.periode_debut,
+        periode_fin: validated.periode_fin,
     })
 
     if (error) {
-        return { error: error.message, success: false }
+        console.error("Erreur création budget:", error.message)
+        return { error: "Erreur lors de la création du budget.", success: false }
     }
 
     revalidatePath("/dashboard/budget")
@@ -38,21 +43,32 @@ export async function updateBudget(id: string, data: BudgetFormData) {
     // 🔒 Vérification backend : Trésorier uniquement
     try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
 
+    // 🛡️ Validation des données
+    const idParsed = uuidSchema.safeParse(id)
+    if (!idParsed.success) { return { error: "ID de budget invalide.", success: false } }
+
+    const parsed = budgetSchema.safeParse(data)
+    if (!parsed.success) {
+        return { error: formatZodErrors(parsed.error), success: false }
+    }
+    const validated = parsed.data
+
     const supabase = await createClient()
 
     const { error } = await supabase
         .from("budget")
         .update({
-            categorie: data.categorie,
-            type: data.type,
-            budget_alloue: data.budget_alloue,
-            periode_debut: data.periode_debut,
-            periode_fin: data.periode_fin,
+            categorie: validated.categorie,
+            type: validated.type,
+            budget_alloue: validated.budget_alloue,
+            periode_debut: validated.periode_debut,
+            periode_fin: validated.periode_fin,
         })
-        .eq("id", id)
+        .eq("id", idParsed.data)
 
     if (error) {
-        return { error: error.message, success: false }
+        console.error("Erreur mise à jour budget:", error.message)
+        return { error: "Erreur lors de la mise à jour du budget.", success: false }
     }
 
     revalidatePath("/dashboard/budget")
@@ -63,12 +79,17 @@ export async function deleteBudget(id: string) {
     // 🔒 Vérification backend : Trésorier uniquement
     try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier.", success: false } }
 
+    // 🛡️ Validation de l'ID
+    const idParsed = uuidSchema.safeParse(id)
+    if (!idParsed.success) { return { error: "ID de budget invalide.", success: false } }
+
     const supabase = await createClient()
 
-    const { error } = await supabase.from("budget").delete().eq("id", id)
+    const { error } = await supabase.from("budget").delete().eq("id", idParsed.data)
 
     if (error) {
-        return { error: error.message, success: false }
+        console.error("Erreur suppression budget:", error.message)
+        return { error: "Erreur lors de la suppression du budget.", success: false }
     }
 
     revalidatePath("/dashboard/budget")
@@ -89,7 +110,8 @@ export async function getBudgetWithRealise(periodeDebut: string, periodeFin: str
         .order("categorie")
 
     if (budgetError) {
-        return { error: budgetError.message }
+        console.error("Erreur chargement budgets:", budgetError.message)
+        return { error: "Erreur lors du chargement des budgets." }
     }
 
     // Récupérer les transactions réalisées par catégorie
@@ -100,7 +122,8 @@ export async function getBudgetWithRealise(periodeDebut: string, periodeFin: str
         .lte("date", periodeFin)
 
     if (transError) {
-        return { error: transError.message }
+        console.error("Erreur chargement transactions:", transError.message)
+        return { error: "Erreur lors du chargement des transactions." }
     }
 
     // Calculer les montants réalisés par catégorie

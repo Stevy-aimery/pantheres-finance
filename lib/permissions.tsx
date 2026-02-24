@@ -1,9 +1,10 @@
 "use client"
 
 import { createContext, useContext, ReactNode } from "react"
+import type { UserRole } from "@/lib/types"
 
-// ===== DÉFINITION DES RÔLES =====
-export type UserRole = "tresorier" | "bureau" | "joueur"
+// Réexport pour les consommateurs existants
+export type { UserRole }
 
 // Fonctions bureau qui peuvent exporter
 export const EXPORT_ALLOWED_FUNCTIONS = ["Président", "Manager", "Secrétaire Général"]

@@ -58,7 +58,7 @@ export function MembreForm({ membre, mode }: MembreFormProps) {
         nom_prenom: membre?.nom_prenom || "",
         telephone: membre?.telephone || "",
         email: membre?.email || "",
-        statut: membre?.statut || "Actif",
+        statut: (membre?.statut as MembreFormData["statut"]) || "Actif",
         role_joueur: membre?.role_joueur ?? true,
         role_bureau: membre?.role_bureau ?? false,
         fonction_bureau: membre?.fonction_bureau || null,
@@ -192,7 +192,7 @@ export function MembreForm({ membre, mode }: MembreFormProps) {
                                     <Label htmlFor="statut">Statut *</Label>
                                     <Select
                                         value={formData.statut}
-                                        onValueChange={(v) => setFormData({ ...formData, statut: v })}
+                                        onValueChange={(v) => setFormData({ ...formData, statut: v as MembreFormData["statut"] })}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
