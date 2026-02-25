@@ -1,33 +1,33 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Settings, Save, Construction } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { ParametresClient } from "./parametres-client"
+import type { Parametre } from "@/lib/types"
 
-export default function ParametresPage() {
-    return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
-                    <p className="text-muted-foreground">Configuration de l&apos;application</p>
-                </div>
-                <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                    <Save className="w-4 h-4" />
-                    Enregistrer
-                </Button>
+export const dynamic = "force-dynamic"
+
+export default async function ParametresPage() {
+    const supabase = await createClient()
+
+    // 🔒 Trésorier uniquement
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/login")
+    const role = user.user_metadata?.role || "joueur"
+    if (role !== "tresorier") redirect("/dashboard")
+
+    // Charger les paramètres
+    const { data, error } = await supabase
+        .from("parametres")
+        .select("*")
+        .order("cle")
+
+    if (error) {
+        console.error("Erreur chargement paramètres:", error.message)
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <p className="text-muted-foreground">Erreur lors du chargement des paramètres.</p>
             </div>
+        )
+    }
 
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
-                        <Construction className="w-8 h-8 text-amber-500" />
-                    </div>
-                    <CardTitle className="mb-2">Module en développement</CardTitle>
-                    <p className="text-muted-foreground max-w-md">
-                        Le module Paramètres sera disponible prochainement.
-                        Il permettra de configurer les montants de cotisation, les emails, et les alertes.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
-    )
+    return <ParametresClient parametres={(data as Parametre[]) || []} />
 }

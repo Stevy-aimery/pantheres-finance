@@ -100,31 +100,34 @@ export async function deleteBudget(id: string) {
 export async function getBudgetWithRealise(periodeDebut: string, periodeFin: string) {
     const supabase = await createClient()
 
-    // Récupérer les budgets de la période
-    const { data: budgets, error: budgetError } = await supabase
-        .from("budget")
-        .select("*")
-        .gte("periode_debut", periodeDebut)
-        .lte("periode_fin", periodeFin)
-        .order("type")
-        .order("categorie")
+    // ⚡ Exécuter les 2 requêtes en parallèle (optimisation N+1)
+    const [budgetResult, transResult] = await Promise.all([
+        supabase
+            .from("budget")
+            .select("*")
+            .gte("periode_debut", periodeDebut)
+            .lte("periode_fin", periodeFin)
+            .order("type")
+            .order("categorie"),
+        supabase
+            .from("transactions")
+            .select("type, categorie, entree, sortie")
+            .gte("date", periodeDebut)
+            .lte("date", periodeFin),
+    ])
 
-    if (budgetError) {
-        console.error("Erreur chargement budgets:", budgetError.message)
+    if (budgetResult.error) {
+        console.error("Erreur chargement budgets:", budgetResult.error.message)
         return { error: "Erreur lors du chargement des budgets." }
     }
 
-    // Récupérer les transactions réalisées par catégorie
-    const { data: transactions, error: transError } = await supabase
-        .from("transactions")
-        .select("type, categorie, entree, sortie")
-        .gte("date", periodeDebut)
-        .lte("date", periodeFin)
-
-    if (transError) {
-        console.error("Erreur chargement transactions:", transError.message)
+    if (transResult.error) {
+        console.error("Erreur chargement transactions:", transResult.error.message)
         return { error: "Erreur lors du chargement des transactions." }
     }
+
+    const budgets = budgetResult.data
+    const transactions = transResult.data
 
     // Calculer les montants réalisés par catégorie
     const realiseParCategorie: Record<string, number> = {}

@@ -3,9 +3,6 @@
 import { createClient } from "@/lib/supabase/server"
 import type { UserRole } from "@/lib/types"
 
-// Réexport pour les consommateurs existants
-export type { UserRole }
-
 export interface AuthContext {
     user: {
         id: string

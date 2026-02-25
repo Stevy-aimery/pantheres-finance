@@ -1,7 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// ===== ROUTES AUTORISÉES PAR RÔLE =====
+// ===== ROUTES AUTORISÉES PAR RÔLE (vérification optimiste) =====
+// La vérification réelle se fait dans chaque page serveur (Phase 2)
 const ROUTES_BY_ROLE: Record<string, string[]> = {
     tresorier: [
         "/dashboard",
@@ -33,7 +34,7 @@ function isRouteAllowed(role: string, pathname: string): boolean {
     )
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -106,12 +107,12 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    // 🔒 RBAC : Vérification des routes par rôle
+    // 🔒 RBAC optimiste : vérification rapide des routes par rôle
+    // La vérification réelle est faite dans chaque page serveur
     if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
         const role = (user.user_metadata?.role as string) || 'joueur'
 
         if (!isRouteAllowed(role, request.nextUrl.pathname)) {
-            // Rediriger vers le dashboard (page autorisée pour tous)
             return NextResponse.redirect(new URL('/dashboard', request.url))
         }
     }
@@ -131,4 +132,3 @@ export const config = {
         '/((?!_next/static|_next/image|favicon.ico|api).*)',
     ],
 }
-

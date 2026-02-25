@@ -11,10 +11,18 @@ export default async function BudgetPage() {
     const role = user.user_metadata?.role || "joueur"
     if (role === "joueur") redirect("/dashboard")
 
-    // Définir la période par défaut (saison Mars-Juillet 2026)
-    const currentYear = new Date().getFullYear()
-    const periodeDebut = `${currentYear}-03-01`
-    const periodeFin = `${currentYear}-07-31`
+    // Lire les dates de saison depuis les paramètres
+    const { data: params } = await supabase
+        .from("parametres")
+        .select("cle, valeur")
+        .in("cle", ["saison_debut", "saison_fin"])
+
+    const paramsMap: Record<string, string> = {}
+    params?.forEach(p => { paramsMap[p.cle] = p.valeur })
+
+    // Fallback sur les valeurs par défaut si pas encore en BDD
+    const periodeDebut = paramsMap["saison_debut"] || `${new Date().getFullYear()}-03-01`
+    const periodeFin = paramsMap["saison_fin"] || `${new Date().getFullYear()}-07-31`
 
     // Récupérer les budgets
     const { data: budgets, error: budgetError } = await supabase

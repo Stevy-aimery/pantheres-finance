@@ -7,7 +7,6 @@ import { BudgetOverview } from "@/components/dashboard/budget-overview"
 import { AlertesPanel } from "@/components/dashboard/alertes-panel"
 import { JoueurDashboard } from "@/components/dashboard/joueur-dashboard"
 import { genererAlertes } from "@/lib/alertes"
-import { SEASON_CONFIG } from "@/lib/config"
 
 export const dynamic = "force-dynamic"
 
@@ -118,11 +117,21 @@ async function getJoueurData(email: string) {
         .eq("id", membre.id)
         .single()
 
+    // Lire les paramètres de saison depuis la BDD
+    const { data: seasonParams } = await supabase
+        .from("parametres")
+        .select("cle, valeur")
+        .in("cle", ["saison_debut", "saison_duree_mois"])
+
+    const paramsMap: Record<string, string> = {}
+    seasonParams?.forEach(p => { paramsMap[p.cle] = p.valeur })
+
     // Calculer le total dû basé sur les mois écoulés
     const now = new Date()
-    const seasonStart = new Date(SEASON_CONFIG.startDate)
+    const seasonStart = new Date(paramsMap["saison_debut"] || "2026-03-01")
+    const durationMonths = parseInt(paramsMap["saison_duree_mois"] || "5", 10)
     let monthsElapsed = (now.getFullYear() - seasonStart.getFullYear()) * 12 + (now.getMonth() - seasonStart.getMonth())
-    monthsElapsed = Math.min(Math.max(monthsElapsed + 1, 1), SEASON_CONFIG.durationMonths)
+    monthsElapsed = Math.min(Math.max(monthsElapsed + 1, 1), durationMonths)
     const totalDu = monthsElapsed * membre.cotisation_mensuelle
 
     // Récupérer l'historique des paiements
