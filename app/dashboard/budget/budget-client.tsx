@@ -58,6 +58,7 @@ interface BudgetClientProps {
     budgets: BudgetItem[]
     periodeDebut: string
     periodeFin: string
+    readOnly?: boolean
 }
 
 // Formatter pour les montants
@@ -69,7 +70,7 @@ const formatCurrency = (amount: number) => {
     }).format(amount)
 }
 
-export function BudgetClient({ budgets, periodeDebut, periodeFin }: BudgetClientProps) {
+export function BudgetClient({ budgets, periodeDebut, periodeFin, readOnly = false }: BudgetClientProps) {
     const router = useRouter()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [budgetToDelete, setBudgetToDelete] = useState<BudgetItem | null>(null)
@@ -146,12 +147,14 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin }: BudgetClient
                         )}
                         <CardTitle>{type}s</CardTitle>
                     </div>
-                    <Link href={`/dashboard/budget/nouveau?type=${type}`}>
-                        <Button size="sm" variant="outline" className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Ajouter
-                        </Button>
-                    </Link>
+                    {!readOnly && (
+                        <Link href={`/dashboard/budget/nouveau?type=${type}`}>
+                            <Button size="sm" variant="outline" className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Ajouter
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </CardHeader>
             <CardContent>
@@ -169,7 +172,7 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin }: BudgetClient
                                 <TableHead className="text-right">Écart</TableHead>
                                 <TableHead className="w-[180px]">Progression</TableHead>
                                 <TableHead>Statut</TableHead>
-                                <TableHead className="w-[80px]"></TableHead>
+                                {!readOnly && <TableHead className="w-[80px]"></TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -203,26 +206,28 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin }: BudgetClient
                                         </div>
                                     </TableCell>
                                     <TableCell>{getStatutBadge(budget.statut, type)}</TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Link href={`/dashboard/budget/${budget.id}`}>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <Pencil className="h-4 w-4" />
+                                    {!readOnly && (
+                                        <TableCell>
+                                            <div className="flex gap-1">
+                                                <Link href={`/dashboard/budget/${budget.id}`}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-red-500 hover:text-red-600"
+                                                    onClick={() => {
+                                                        setBudgetToDelete(budget)
+                                                        setDeleteDialogOpen(true)
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
-                                            </Link>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-red-500 hover:text-red-600"
-                                                onClick={() => {
-                                                    setBudgetToDelete(budget)
-                                                    setDeleteDialogOpen(true)
-                                                }}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
+                                            </div>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                             {/* Ligne de total */}
@@ -260,12 +265,14 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin }: BudgetClient
                         Période : {new Date(periodeDebut).toLocaleDateString("fr-FR")} - {new Date(periodeFin).toLocaleDateString("fr-FR")}
                     </p>
                 </div>
-                <Link href="/dashboard/budget/nouveau">
-                    <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                        <Plus className="h-4 w-4" />
-                        Nouveau budget
-                    </Button>
-                </Link>
+                {!readOnly && (
+                    <Link href="/dashboard/budget/nouveau">
+                        <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                            <Plus className="h-4 w-4" />
+                            Nouveau budget
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             {/* KPIs Cards */}

@@ -80,6 +80,7 @@ interface TransactionsClientProps {
     soldeActuel: number
     totalRecettes: number
     totalDepenses: number
+    readOnly?: boolean
 }
 
 function formatCurrency(amount: number) {
@@ -123,6 +124,7 @@ export function TransactionsClient({
     soldeActuel,
     totalRecettes,
     totalDepenses,
+    readOnly = false,
 }: TransactionsClientProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -284,14 +286,16 @@ export function TransactionsClient({
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </ExportButton>
-                    <TresorierOnly>
-                        <Link href="/dashboard/transactions/nouvelle">
-                            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                                <Plus className="w-4 h-4" />
-                                Nouvelle transaction
-                            </Button>
-                        </Link>
-                    </TresorierOnly>
+                    {!readOnly && (
+                        <TresorierOnly>
+                            <Link href="/dashboard/transactions/nouvelle">
+                                <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                                    <Plus className="w-4 h-4" />
+                                    Nouvelle transaction
+                                </Button>
+                            </Link>
+                        </TresorierOnly>
+                    )}
                 </div>
             </div>
 
@@ -519,35 +523,37 @@ export function TransactionsClient({
                                                     <span className="text-muted-foreground">-</span>
                                                 )}
                                             </TableCell>
-                                            <TresorierOnly>
-                                                <TableCell>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem asChild>
-                                                                <Link href={`/dashboard/transactions/${transaction.id}`}>
-                                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                                    Modifier
-                                                                </Link>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="text-destructive focus:text-destructive"
-                                                                onClick={() => {
-                                                                    setTransactionToDelete(transaction)
-                                                                    setDeleteDialogOpen(true)
-                                                                }}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Supprimer
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TresorierOnly>
+                                            {!readOnly && (
+                                                <TresorierOnly>
+                                                    <TableCell>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem asChild>
+                                                                    <Link href={`/dashboard/transactions/${transaction.id}`}>
+                                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                                        Modifier
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive focus:text-destructive"
+                                                                    onClick={() => {
+                                                                        setTransactionToDelete(transaction)
+                                                                        setDeleteDialogOpen(true)
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Supprimer
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TresorierOnly>
+                                            )}
                                         </TableRow>
                                     )
                                 })}

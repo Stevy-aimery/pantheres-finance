@@ -81,6 +81,7 @@ interface MessagesClientProps {
         role_bureau: boolean
     } | null
     role: string
+    readOnly?: boolean
 }
 
 // ═══════════════════════════════════════════
@@ -103,6 +104,7 @@ export function MessagesClient({
     conversations,
     currentMembre,
     role,
+    readOnly = false,
 }: MessagesClientProps) {
     const router = useRouter()
     const supabase = createClient()
@@ -326,7 +328,7 @@ export function MessagesClient({
                             : "Échangez avec le trésorier"}
                     </p>
                 </div>
-                {!isTresorier && (
+                {!isTresorier && !readOnly && (
                     <Dialog open={newMessageOpen} onOpenChange={setNewMessageOpen}>
                         <DialogTrigger asChild>
                             <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
@@ -645,39 +647,47 @@ export function MessagesClient({
                             </ScrollArea>
 
                             {/* Input area */}
-                            <div className="p-3 border-t bg-background">
-                                <div className="flex items-end gap-2">
-                                    <Textarea
-                                        ref={textareaRef}
-                                        placeholder="Écrire un message..."
-                                        value={messageText}
-                                        onChange={(e) => setMessageText(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        rows={1}
-                                        className="flex-1 resize-none min-h-[40px] max-h-[120px] rounded-xl bg-muted border-0 focus-visible:ring-1 focus-visible:ring-amber-500"
-                                    />
-                                    <Button
-                                        onClick={handleSendMessage}
-                                        disabled={!messageText.trim()}
-                                        size="icon"
-                                        className={cn(
-                                            "h-10 w-10 rounded-xl flex-shrink-0 transition-all",
-                                            messageText.trim()
-                                                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-md"
-                                                : "bg-muted text-muted-foreground"
-                                        )}
-                                    >
-                                        {sending ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Send className="w-4 h-4" />
-                                        )}
-                                    </Button>
+                            {!readOnly ? (
+                                <div className="p-3 border-t bg-background">
+                                    <div className="flex items-end gap-2">
+                                        <Textarea
+                                            ref={textareaRef}
+                                            placeholder="Écrire un message..."
+                                            value={messageText}
+                                            onChange={(e) => setMessageText(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            rows={1}
+                                            className="flex-1 resize-none min-h-[40px] max-h-[120px] rounded-xl bg-muted border-0 focus-visible:ring-1 focus-visible:ring-amber-500"
+                                        />
+                                        <Button
+                                            onClick={handleSendMessage}
+                                            disabled={!messageText.trim()}
+                                            size="icon"
+                                            className={cn(
+                                                "h-10 w-10 rounded-xl flex-shrink-0 transition-all",
+                                                messageText.trim()
+                                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-md"
+                                                    : "bg-muted text-muted-foreground"
+                                            )}
+                                        >
+                                            {sending ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Send className="w-4 h-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+                                        Appuyez sur Entrée pour envoyer · Shift+Entrée pour un retour à la ligne
+                                    </p>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-                                    Appuyez sur Entrée pour envoyer · Shift+Entrée pour un retour à la ligne
-                                </p>
-                            </div>
+                            ) : (
+                                <div className="p-3 border-t bg-muted/50 text-center">
+                                    <p className="text-sm text-muted-foreground">
+                                        Mode lecture seule — vous ne pouvez pas envoyer de messages avec ce profil
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
