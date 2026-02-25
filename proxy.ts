@@ -90,7 +90,7 @@ export async function proxy(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     // Routes publiques (pas besoin d'authentification)
-    const publicRoutes = ['/login', '/auth/callback']
+    const publicRoutes = ['/login', '/auth/callback', '/change-password', '/select-profile']
     const isPublicRoute = publicRoutes.some(route =>
         request.nextUrl.pathname.startsWith(route)
     )
@@ -107,12 +107,34 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    // 🔒 RBAC optimiste : vérification rapide des routes par rôle
-    // La vérification réelle est faite dans chaque page serveur
-    if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
-        const role = (user.user_metadata?.role as string) || 'joueur'
+    // 🔒 Forcer le changement de mot de passe à la 1ère connexion
+    if (user && user.user_metadata?.force_password_change === true) {
+        if (!request.nextUrl.pathname.startsWith('/change-password')) {
+            return NextResponse.redirect(new URL('/change-password', request.url))
+        }
+        return response
+    }
 
-        if (!isRouteAllowed(role, request.nextUrl.pathname)) {
+    // 🔒 Multi-rôles : rediriger vers le sélecteur de profil si nécessaire
+    if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+        // Construire roles[] avec fallback si absent (anciens comptes)
+        let roles = (user.user_metadata?.roles as string[]) || []
+        const mainRole = (user.user_metadata?.role as string) || 'joueur'
+        if (roles.length === 0) {
+            roles = [mainRole]
+        }
+        const activeRole = request.cookies.get('active-role')?.value
+
+        const needsProfileSelection = roles.length > 1 && !activeRole
+
+        if (needsProfileSelection) {
+            return NextResponse.redirect(new URL('/select-profile', request.url))
+        }
+
+        // RBAC : utiliser active-role cookie, sinon user_metadata.role
+        const effectiveRole = activeRole || mainRole
+
+        if (!isRouteAllowed(effectiveRole, request.nextUrl.pathname)) {
             return NextResponse.redirect(new URL('/dashboard', request.url))
         }
     }

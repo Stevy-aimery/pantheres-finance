@@ -31,6 +31,7 @@ import {
     Sun,
     Shield,
     MessageSquare,
+    Repeat2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { RoleProvider, UserRole, NAVIGATION_BY_ROLE } from "@/lib/permissions"
@@ -41,6 +42,7 @@ interface DashboardLayoutProps {
     role: string
     fonctionBureau?: string | null
     memberId?: string | null
+    hasMultiRoles?: boolean
 }
 
 // Navigation complète avec icônes
@@ -59,7 +61,8 @@ export function DashboardLayout({
     user,
     role,
     fonctionBureau = null,
-    memberId = null
+    memberId = null,
+    hasMultiRoles = false
 }: DashboardLayoutProps) {
     const pathname = usePathname()
     const router = useRouter()
@@ -70,8 +73,17 @@ export function DashboardLayout({
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
     const handleLogout = async () => {
+        // Supprimer le cookie active-role
+        document.cookie = "active-role=; path=/; max-age=0"
         await supabase.auth.signOut()
         router.push("/login")
+        router.refresh()
+    }
+
+    const handleSwitchProfile = () => {
+        // Supprimer le cookie pour forcer la re-sélection
+        document.cookie = "active-role=; path=/; max-age=0"
+        router.push("/select-profile")
         router.refresh()
     }
 
@@ -202,6 +214,15 @@ export function DashboardLayout({
                                         </>
                                     )}
                                 </DropdownMenuItem>
+                                {hasMultiRoles && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={handleSwitchProfile}>
+                                            <Repeat2 className="mr-2 h-4 w-4" />
+                                            Changer de profil
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                                     <LogOut className="mr-2 h-4 w-4" />

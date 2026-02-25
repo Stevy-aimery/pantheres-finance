@@ -164,3 +164,76 @@ export const EmailRapportMensuel: React.FC<Readonly<RapportMensuelProps>> = ({
         </div>
     </div>
 )
+
+// ───── Bienvenue Nouveau Membre ─────
+
+interface BienvenueMembreProps {
+    nomMembre: string
+    email: string
+    roles: string[]
+    appUrl: string
+}
+
+export const EmailBienvenueMembre: React.FC<Readonly<BienvenueMembreProps>> = ({
+    nomMembre,
+    email,
+    roles,
+    appUrl,
+}) => (
+    <div style={{ fontFamily: "Arial, sans-serif", maxWidth: "600px", margin: "0 auto" }}>
+        <div style={{ backgroundColor: "#f59e0b", padding: "20px", textAlign: "center" }}>
+            <h1 style={{ color: "white", margin: 0 }}>🏀 Bienvenue aux Panthères !</h1>
+        </div>
+        <div style={{ padding: "30px", backgroundColor: "#f9fafb" }}>
+            <h2 style={{ color: "#1f2937" }}>Bienvenue, {nomMembre} !</h2>
+            <p>
+                Vous avez été ajouté(e) à l&apos;espace de gestion des <strong>Panthères de Fès</strong>.
+                Vous pouvez désormais accéder à votre espace personnel.
+            </p>
+
+            <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "8px", margin: "20px 0" }}>
+                <h3 style={{ marginTop: 0, color: "#f59e0b" }}>Vos informations de connexion</h3>
+                <p style={{ margin: "5px 0" }}>
+                    <strong>Rôle(s) :</strong> {roles.join(", ")}
+                </p>
+                <p style={{ margin: "5px 0" }}>
+                    <strong>Email :</strong> {email}
+                </p>
+                <p style={{ margin: "5px 0" }}>
+                    <strong>Mot de passe :</strong> 123456
+                </p>
+            </div>
+
+            <div style={{ backgroundColor: "#fef3c7", padding: "15px", borderRadius: "8px", borderLeft: "4px solid #f59e0b", margin: "20px 0" }}>
+                <p style={{ margin: 0, color: "#92400e" }}>
+                    <strong>⚠️ Important :</strong> À votre première connexion, vous devrez <strong>obligatoirement changer votre mot de passe</strong> pour des raisons de sécurité.
+                </p>
+            </div>
+
+            <div style={{ textAlign: "center", margin: "30px 0" }}>
+                <a
+                    href={appUrl}
+                    style={{
+                        backgroundColor: "#f59e0b",
+                        color: "white",
+                        padding: "12px 30px",
+                        borderRadius: "8px",
+                        textDecoration: "none",
+                        fontWeight: "bold",
+                        display: "inline-block",
+                    }}
+                >
+                    Accéder à mon espace →
+                </a>
+            </div>
+
+            <p style={{ marginTop: "30px" }}>
+                Cordialement,<br />
+                <strong>Le Bureau - Panthères de Fès</strong>
+            </p>
+        </div>
+        <div style={{ backgroundColor: "#1f2937", padding: "15px", textAlign: "center", fontSize: "12px", color: "#9ca3af" }}>
+            <p style={{ margin: 0 }}>© 2026 Panthères de Fès - Tous droits réservés</p>
+        </div>
+    </div>
+)

@@ -1,7 +1,7 @@
 "use server"
 
 import { resend, EMAIL_FROM } from "@/lib/resend"
-import { EmailRelanceCotisation, EmailConfirmationPaiement, EmailRapportMensuel } from "@/emails/templates"
+import { EmailRelanceCotisation, EmailConfirmationPaiement, EmailRapportMensuel, EmailBienvenueMembre } from "@/emails/templates"
 import { createClient } from "@/lib/supabase/server"
 
 /**
@@ -229,5 +229,71 @@ export async function envoyerRapportMensuel() {
         emailsEnvoyes,
         erreursEnvoi,
         total: membresBureau.length,
+    }
+}
+
+/**
+ * Envoie un email de bienvenue à un nouveau membre
+ */
+export async function envoyerEmailBienvenue(membreId: string) {
+    const supabase = await createClient()
+
+    // Récupérer les infos du membre
+    const { data: membre } = await supabase
+        .from("membres")
+        .select("nom_prenom, email, role_joueur, role_bureau, fonction_bureau")
+        .eq("id", membreId)
+        .single()
+
+    if (!membre) {
+        return { error: "Membre introuvable" }
+    }
+
+    // Construire la liste des rôles lisibles
+    const roles: string[] = []
+    if (membre.role_joueur) roles.push("Joueur")
+    if (membre.role_bureau) {
+        roles.push(membre.fonction_bureau ? `Bureau (${membre.fonction_bureau})` : "Membre du Bureau")
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: EMAIL_FROM,
+            to: [membre.email],
+            subject: `Bienvenue aux Panthères de Fès — Vos accès`,
+            react: await EmailBienvenueMembre({
+                nomMembre: membre.nom_prenom,
+                email: membre.email,
+                roles,
+                appUrl: `${appUrl}/login`,
+            }),
+        })
+
+        if (error) {
+            await supabase.from("notifications_log").insert({
+                type: "bienvenue",
+                destinataire_email: membre.email,
+                destinataire_id: membreId,
+                objet: `Bienvenue aux Panthères de Fès`,
+                statut: "failed",
+                error_message: error.message,
+            })
+            return { error: error.message }
+        }
+
+        await supabase.from("notifications_log").insert({
+            type: "bienvenue",
+            destinataire_email: membre.email,
+            destinataire_id: membreId,
+            objet: `Bienvenue aux Panthères de Fès`,
+            corps: `Email de bienvenue envoyé (rôles: ${roles.join(", ")})`,
+            statut: "success",
+        })
+
+        return { success: true, messageId: data?.id }
+    } catch (error) {
+        return { error: String(error) }
     }
 }

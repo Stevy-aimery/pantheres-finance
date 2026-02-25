@@ -189,10 +189,15 @@ export default async function DashboardPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const role = user?.user_metadata?.role || "joueur"
+    // Déterminer le rôle effectif (cookie active-role > user_metadata.role)
+    const { cookies } = await import("next/headers")
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get("active-role")?.value
+    const mainRole = user?.user_metadata?.role || "joueur"
+    const role = activeRole || mainRole
 
-    // 🔒 Si joueur, afficher UNIQUEMENT le dashboard personnel
-    // Ne JAMAIS afficher le dashboard global pour un joueur
+    // 🔒 Si joueur (rôle actif), afficher UNIQUEMENT le dashboard personnel
+    // Même si c'est un bureau qui a choisi le profil joueur
     if (role === "joueur") {
         if (user?.id) {
             const joueurData = await getJoueurData(user.id, user.email || undefined)
@@ -221,16 +226,43 @@ export default async function DashboardPage() {
         )
     }
 
-    // Dashboard global pour Trésorier et Bureau uniquement
+    // Dashboard global pour Trésorier et Bureau
     const kpis = await getKPIs()
     const transactions = await getRecentTransactions()
     const cotisations = await getCotisationsStatus()
     const budget = await getBudgetOverview()
+
+    // Bureau = lecture seule (pas d'alertes ni actions de gestion)
+    if (role === "bureau") {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+                    <p className="text-muted-foreground">
+                        Vue d&apos;ensemble de la situation financière
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-medium">
+                            Lecture seule
+                        </span>
+                    </p>
+                </div>
+
+                <KPICards data={kpis} />
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <RecentTransactions transactions={transactions} />
+                    <CotisationsStatus cotisations={cotisations} />
+                </div>
+
+                <BudgetOverview budget={budget} />
+            </div>
+        )
+    }
+
+    // Dashboard complet pour Trésorier (avec alertes et gestion)
     const alertes = await genererAlertes()
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
                 <p className="text-muted-foreground">
@@ -238,22 +270,15 @@ export default async function DashboardPage() {
                 </p>
             </div>
 
-            {/* KPI Cards */}
             <KPICards data={kpis} />
 
-            {/* Alertes Panel */}
             <AlertesPanel alertes={alertes} />
 
-            {/* Main Grid */}
             <div className="grid gap-6 lg:grid-cols-2">
-                {/* Recent Transactions */}
                 <RecentTransactions transactions={transactions} />
-
-                {/* Cotisations Status */}
                 <CotisationsStatus cotisations={cotisations} />
             </div>
 
-            {/* Budget Overview */}
             <BudgetOverview budget={budget} />
         </div>
     )

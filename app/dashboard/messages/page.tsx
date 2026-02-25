@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { MessagesClient } from "./messages-client"
 
 export const dynamic = "force-dynamic"
@@ -74,12 +75,18 @@ export default async function MessagesPage() {
         }
     }
 
+    // Déterminer si lecture seule (profil Bureau)
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get('active-role')?.value || 'tresorier'
+    const readOnly = activeRole === 'bureau'
+
     return (
         <MessagesClient
             messages={(messages as any) || []}
             conversations={conversations}
             currentMembre={currentMembre}
             role={role}
+            readOnly={readOnly}
         />
     )
 }

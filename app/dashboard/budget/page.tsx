@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { BudgetClient } from "./budget-client"
 
 export default async function BudgetPage() {
@@ -81,11 +82,17 @@ export default async function BudgetPage() {
         }
     })
 
+    // Déterminer si lecture seule (profil Bureau)
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get('active-role')?.value || 'tresorier'
+    const readOnly = activeRole === 'bureau'
+
     return (
         <BudgetClient
             budgets={budgetsEnrichis}
             periodeDebut={periodeDebut}
             periodeFin={periodeFin}
+            readOnly={readOnly}
         />
     )
 }

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { TransactionsClient } from "./transactions-client"
 
 export default async function TransactionsPage() {
@@ -29,12 +30,18 @@ export default async function TransactionsPage() {
     const totalDepenses = transactionsList.reduce((acc, t) => acc + (t.sortie || 0), 0)
     const soldeActuel = totalRecettes - totalDepenses
 
+    // Déterminer si lecture seule (profil Bureau)
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get('active-role')?.value || 'tresorier'
+    const readOnly = activeRole === 'bureau'
+
     return (
         <TransactionsClient
             transactions={transactionsList}
             soldeActuel={soldeActuel}
             totalRecettes={totalRecettes}
             totalDepenses={totalDepenses}
+            readOnly={readOnly}
         />
     )
 }

@@ -81,6 +81,7 @@ interface CotisationStatus {
 interface MembresClientProps {
     membres: Membre[]
     cotisations: Record<string, CotisationStatus>
+    readOnly?: boolean
 }
 
 function formatCurrency(amount: number) {
@@ -90,7 +91,7 @@ function formatCurrency(amount: number) {
     }).format(amount) + " MAD"
 }
 
-export function MembresClient({ membres, cotisations }: MembresClientProps) {
+export function MembresClient({ membres, cotisations, readOnly = false }: MembresClientProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const supabase = createClient()
@@ -222,14 +223,16 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                     <h1 className="text-2xl font-bold tracking-tight">Membres</h1>
                     <p className="text-muted-foreground">Gérez les joueurs et membres du bureau</p>
                 </div>
-                <TresorierOnly>
-                    <Link href="/dashboard/membres/nouveau">
-                        <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                            <Plus className="w-4 h-4" />
-                            Nouveau membre
-                        </Button>
-                    </Link>
-                </TresorierOnly>
+                {!readOnly && (
+                    <TresorierOnly>
+                        <Link href="/dashboard/membres/nouveau">
+                            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                                <Plus className="w-4 h-4" />
+                                Nouveau membre
+                            </Button>
+                        </Link>
+                    </TresorierOnly>
+                )}
             </div>
 
             {/* Stats Cards */}
@@ -416,36 +419,38 @@ export function MembresClient({ membres, cotisations }: MembresClientProps) {
                                                 </div>
                                             </TableCell>
                                             <TableCell>{getStatutBadge(membre.statut)}</TableCell>
-                                            <TresorierOnly>
-                                                <TableCell onClick={(e) => e.stopPropagation()}>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem asChild>
-                                                                <Link href={`/dashboard/membres/${membre.id}`}>
-                                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                                    Modifier
-                                                                </Link>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="text-destructive focus:text-destructive"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    setMembreToDelete(membre)
-                                                                    setDeleteDialogOpen(true)
-                                                                }}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Supprimer
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TresorierOnly>
+                                            {!readOnly && (
+                                                <TresorierOnly>
+                                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem asChild>
+                                                                    <Link href={`/dashboard/membres/${membre.id}`}>
+                                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                                        Modifier
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive focus:text-destructive"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        setMembreToDelete(membre)
+                                                                        setDeleteDialogOpen(true)
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Supprimer
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TresorierOnly>
+                                            )}
                                         </TableRow>
                                     )
                                 })}

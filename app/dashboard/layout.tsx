@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { DashboardLayout } from "@/components/dashboard/layout"
 
 export default async function DashboardRootLayout({
@@ -14,8 +15,6 @@ export default async function DashboardRootLayout({
         redirect("/login")
     }
 
-    // Récupérer le rôle de l'utilisateur depuis les metadata
-    const role = user.user_metadata?.role || "joueur"
 
     // Récupérer les informations du membre (par auth_user_id, fallback email)
     let fonctionBureau: string | null = null
@@ -42,12 +41,25 @@ export default async function DashboardRootLayout({
         fonctionBureau = membre.fonction_bureau
     }
 
+    // Déterminer le rôle effectif (cookie active-role > user_metadata.role)
+    const cookieStore = await cookies()
+    const activeRoleCookie = cookieStore.get('active-role')?.value
+    const mainRole = user.user_metadata?.role || "joueur"
+    // Construire roles[] avec fallback si absent (anciens comptes)
+    let roles = (user.user_metadata?.roles as string[]) || []
+    if (roles.length === 0) {
+        roles = [mainRole]
+    }
+    const effectiveRole = activeRoleCookie || mainRole
+    const hasMultiRoles = roles.length > 1
+
     return (
         <DashboardLayout
             user={user}
-            role={role}
+            role={effectiveRole}
             fonctionBureau={fonctionBureau}
             memberId={memberId}
+            hasMultiRoles={hasMultiRoles}
         >
             {children}
         </DashboardLayout>

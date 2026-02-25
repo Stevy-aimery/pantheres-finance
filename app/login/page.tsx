@@ -24,7 +24,7 @@ export default function LoginPage() {
         setLoading(true)
         setError(null)
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         })
@@ -34,6 +34,18 @@ export default function LoginPage() {
             setLoading(false)
             return
         }
+
+        // Stocker les rôles pour le sélecteur de profil
+        // Fallback : si roles[] n'existe pas (ancien compte), utiliser role principal
+        let roles = data.user?.user_metadata?.roles as string[] | undefined
+        if (!roles || roles.length === 0) {
+            const mainRole = data.user?.user_metadata?.role as string | undefined
+            roles = mainRole ? [mainRole] : ["joueur"]
+        }
+        localStorage.setItem("user_roles", JSON.stringify(roles))
+
+        // Supprimer le cookie active-role pour forcer la re-sélection
+        document.cookie = "active-role=; path=/; max-age=0"
 
         router.push("/dashboard")
         router.refresh()

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { MembresClient } from "./membres-client"
 
 export const dynamic = "force-dynamic"
@@ -56,5 +57,10 @@ export default async function MembresPage() {
     const membres = await getMembres()
     const cotisations = await getEtatCotisations()
 
-    return <MembresClient membres={membres} cotisations={cotisations} />
+    // Déterminer si lecture seule (profil Bureau)
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get('active-role')?.value || 'tresorier'
+    const readOnly = activeRole === 'bureau'
+
+    return <MembresClient membres={membres} cotisations={cotisations} readOnly={readOnly} />
 }
