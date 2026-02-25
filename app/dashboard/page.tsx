@@ -98,15 +98,25 @@ async function getBudgetOverview() {
 }
 
 // Données joueur
-async function getJoueurData(email: string) {
+async function getJoueurData(userId: string, email?: string) {
     const supabase = await createClient()
 
-    // Récupérer les infos du membre
-    const { data: membre } = await supabase
+    // Récupérer les infos du membre (par auth_user_id, fallback email)
+    let { data: membre } = await supabase
         .from("membres")
         .select("*")
-        .eq("email", email)
+        .eq("auth_user_id", userId)
         .single()
+
+    // Fallback par email si auth_user_id pas encore peuplé
+    if (!membre && email) {
+        const { data: membreByEmail } = await supabase
+            .from("membres")
+            .select("*")
+            .eq("email", email)
+            .single()
+        membre = membreByEmail
+    }
 
     if (!membre) return null
 
@@ -171,8 +181,8 @@ export default async function DashboardPage() {
     // 🔒 Si joueur, afficher UNIQUEMENT le dashboard personnel
     // Ne JAMAIS afficher le dashboard global pour un joueur
     if (role === "joueur") {
-        if (user?.email) {
-            const joueurData = await getJoueurData(user.email)
+        if (user?.id) {
+            const joueurData = await getJoueurData(user.id, user.email || undefined)
 
             if (joueurData) {
                 return <JoueurDashboard {...joueurData} />

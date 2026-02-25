@@ -28,12 +28,25 @@ async function getAuthContext(): Promise<AuthContext> {
 
     const role = (user.user_metadata?.role as UserRole) || "joueur"
 
-    // Récupérer le membre associé
-    const { data: membre } = await supabase
+    // Récupérer le membre associé (par auth_user_id, fallback email)
+    let membre = null
+    const { data: membreById } = await supabase
         .from("membres")
         .select("id")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .single()
+
+    if (membreById) {
+        membre = membreById
+    } else {
+        // Fallback : recherche par email si auth_user_id pas encore peuplé
+        const { data: membreByEmail } = await supabase
+            .from("membres")
+            .select("id")
+            .eq("email", user.email)
+            .single()
+        membre = membreByEmail
+    }
 
     return {
         user: {

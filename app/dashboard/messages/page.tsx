@@ -14,12 +14,21 @@ export default async function MessagesPage() {
 
     const role = user.user_metadata?.role || "joueur"
 
-    // Récupérer les infos du membre connecté
-    const { data: currentMembre } = await supabase
+    // Récupérer les infos du membre connecté (par auth_user_id, fallback email)
+    let { data: currentMembre } = await supabase
         .from("membres")
         .select("id, nom_prenom, fonction_bureau, role_bureau")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .single()
+
+    if (!currentMembre) {
+        const { data: membreByEmail } = await supabase
+            .from("membres")
+            .select("id, nom_prenom, fonction_bureau, role_bureau")
+            .eq("email", user.email)
+            .single()
+        currentMembre = membreByEmail
+    }
 
     // ─── Récupérer les messages (architecture flat pour chat) ───
     // Tous les messages sont dans la même table, liés par membre_id

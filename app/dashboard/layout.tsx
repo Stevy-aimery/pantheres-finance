@@ -17,15 +17,25 @@ export default async function DashboardRootLayout({
     // Récupérer le rôle de l'utilisateur depuis les metadata
     const role = user.user_metadata?.role || "joueur"
 
-    // Récupérer les informations du membre liées à cet utilisateur
+    // Récupérer les informations du membre (par auth_user_id, fallback email)
     let fonctionBureau: string | null = null
     let memberId: string | null = null
 
-    const { data: membre } = await supabase
+    let { data: membre } = await supabase
         .from("membres")
         .select("id, fonction_bureau")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .single()
+
+    // Fallback par email si auth_user_id pas encore peuplé
+    if (!membre) {
+        const { data: membreByEmail } = await supabase
+            .from("membres")
+            .select("id, fonction_bureau")
+            .eq("email", user.email)
+            .single()
+        membre = membreByEmail
+    }
 
     if (membre) {
         memberId = membre.id
