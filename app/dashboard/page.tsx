@@ -102,23 +102,36 @@ async function getJoueurData(userId: string, email?: string) {
     const supabase = await createClient()
 
     // Récupérer les infos du membre (par auth_user_id, fallback email)
-    let { data: membre } = await supabase
+    const { data: membreById, error: errorById } = await supabase
         .from("membres")
         .select("*")
         .eq("auth_user_id", userId)
         .single()
 
+    let membre = membreById
+
+    if (errorById) {
+        console.log("[getJoueurData] auth_user_id lookup failed:", errorById.message)
+    }
+
     // Fallback par email si auth_user_id pas encore peuplé
     if (!membre && email) {
-        const { data: membreByEmail } = await supabase
+        const { data: membreByEmail, error: errorByEmail } = await supabase
             .from("membres")
             .select("*")
             .eq("email", email)
             .single()
+
+        if (errorByEmail) {
+            console.error("[getJoueurData] Email fallback also failed:", errorByEmail.message, "| email:", email)
+        }
         membre = membreByEmail
     }
 
-    if (!membre) return null
+    if (!membre) {
+        console.error("[getJoueurData] No member found for userId:", userId, "email:", email)
+        return null
+    }
 
     // Récupérer le statut de cotisation
     const { data: cotisation } = await supabase
