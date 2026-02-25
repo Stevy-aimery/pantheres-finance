@@ -63,6 +63,7 @@ interface MembreDetailModalProps {
     open: boolean
     onClose: () => void
     onRefresh?: () => void
+    readOnly?: boolean
 }
 
 function formatCurrency(amount: number) {
@@ -85,7 +86,8 @@ export function MembreDetailModal({
     cotisation,
     open,
     onClose,
-    onRefresh
+    onRefresh,
+    readOnly = false,
 }: MembreDetailModalProps) {
     const [paiements, setPaiements] = useState<Paiement[]>([])
     const [loadingPaiements, setLoadingPaiements] = useState(false)
@@ -208,6 +210,7 @@ export function MembreDetailModal({
                             cotisationMensuelle={membre.cotisation_mensuelle}
                             paiements={paiements}
                             onPaiementAdded={handlePaiementAdded}
+                            readOnly={readOnly}
                         />
                     </div>
 
@@ -282,12 +285,14 @@ export function MembreDetailModal({
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Retour
                     </Button>
-                    <Link href={`/dashboard/membres/${membre.id}`} className="flex-1">
-                        <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white">
-                            <Pencil className="w-4 h-4" />
-                            Modifier
-                        </Button>
-                    </Link>
+                    {!readOnly && (
+                        <Link href={`/dashboard/membres/${membre.id}`} className="flex-1">
+                            <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                                <Pencil className="w-4 h-4" />
+                                Modifier
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

@@ -35,9 +35,9 @@ export default function SelectProfilePage() {
     const profileCards = [
         {
             role: "joueur",
-            title: "Joueur",
+            title: "Espace personnel",
             description: "Accéder à votre espace personnel : cotisations, paiements et profil.",
-            icon: "🏀",
+            icon: "⚽",
             gradient: "from-emerald-500 to-emerald-600",
             shadow: "shadow-emerald-500/20",
         },
@@ -58,6 +58,7 @@ export default function SelectProfilePage() {
             shadow: "shadow-amber-500/20",
         },
     ]
+
 
     // Filtrer les cartes en fonction des rôles disponibles
     const availableProfiles = profileCards.filter(card => roles.includes(card.role))

@@ -259,8 +259,14 @@ export function TransactionsClient({
                     <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
                     <p className="text-muted-foreground">
                         Journal des recettes et dépenses
+                        {readOnly && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-medium">
+                                Lecture seule
+                            </span>
+                        )}
                     </p>
                 </div>
+
                 <div className="flex gap-2">
                     <ExportButton>
                         <DropdownMenu>

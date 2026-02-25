@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { TransactionForm } from "../transaction-form"
 
 export default async function NouvelleTransactionPage() {
+    // 🔒 Protection Bureau (lecture seule)
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get("active-role")?.value
+    if (activeRole === "bureau") redirect("/dashboard/transactions")
+
     const supabase = await createClient()
 
     // Récupérer la liste des membres

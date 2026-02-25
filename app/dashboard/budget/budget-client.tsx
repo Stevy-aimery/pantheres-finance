@@ -263,8 +263,14 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin, readOnly = fal
                     <h1 className="text-2xl font-bold tracking-tight">Budget Prévisionnel</h1>
                     <p className="text-muted-foreground">
                         Période : {new Date(periodeDebut).toLocaleDateString("fr-FR")} - {new Date(periodeFin).toLocaleDateString("fr-FR")}
+                        {readOnly && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-medium">
+                                Lecture seule
+                            </span>
+                        )}
                     </p>
                 </div>
+
                 {!readOnly && (
                     <Link href="/dashboard/budget/nouveau">
                         <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">

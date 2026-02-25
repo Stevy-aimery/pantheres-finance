@@ -326,8 +326,14 @@ export function MessagesClient({
                         {isTresorier
                             ? "Conversations avec les membres"
                             : "Échangez avec le trésorier"}
+                        {readOnly && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-medium">
+                                Lecture seule
+                            </span>
+                        )}
                     </p>
                 </div>
+
                 {!isTresorier && !readOnly && (
                     <Dialog open={newMessageOpen} onOpenChange={setNewMessageOpen}>
                         <DialogTrigger asChild>

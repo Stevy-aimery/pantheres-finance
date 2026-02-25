@@ -221,8 +221,16 @@ export function MembresClient({ membres, cotisations, readOnly = false }: Membre
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Membres</h1>
-                    <p className="text-muted-foreground">Gérez les joueurs et membres du bureau</p>
+                    <p className="text-muted-foreground">
+                        Gérez les joueurs et membres du bureau
+                        {readOnly && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-medium">
+                                Lecture seule
+                            </span>
+                        )}
+                    </p>
                 </div>
+
                 {!readOnly && (
                     <TresorierOnly>
                         <Link href="/dashboard/membres/nouveau">
@@ -467,7 +475,9 @@ export function MembresClient({ membres, cotisations, readOnly = false }: Membre
                 open={detailModalOpen}
                 onClose={() => setDetailModalOpen(false)}
                 onRefresh={() => router.refresh()}
+                readOnly={readOnly}
             />
+
 
             {/* Delete Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

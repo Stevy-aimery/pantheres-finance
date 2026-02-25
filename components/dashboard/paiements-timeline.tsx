@@ -47,6 +47,7 @@ interface PaiementsTimelineProps {
     cotisationMensuelle: number
     paiements: Paiement[]
     onPaiementAdded?: () => void
+    readOnly?: boolean
 }
 
 // Mois de la saison (Mars à Juillet)
@@ -78,6 +79,7 @@ export function PaiementsTimeline({
     cotisationMensuelle,
     paiements,
     onPaiementAdded,
+    readOnly = false,
 }: PaiementsTimelineProps) {
     const [addDialogOpen, setAddDialogOpen] = useState(false)
     const [selectedMois, setSelectedMois] = useState<number | null>(null)
@@ -159,7 +161,7 @@ export function PaiementsTimeline({
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     Paiements Saison {anneeEnCours}
                 </h3>
-                {moisNonPayes.length > 0 && (
+                {!readOnly && moisNonPayes.length > 0 && (
                     <Button
                         variant="outline"
                         size="sm"
@@ -182,15 +184,17 @@ export function PaiementsTimeline({
                         <div key={mois.numero} className="flex-1 flex flex-col items-center">
                             {/* Cercle avec statut */}
                             <button
-                                onClick={() => !isPaye && ouvrirAjoutPaiement(mois.numero)}
-                                disabled={isPaye}
+                                onClick={() => !isPaye && !readOnly && ouvrirAjoutPaiement(mois.numero)}
+                                disabled={isPaye || readOnly}
                                 className={cn(
                                     "relative w-10 h-10 rounded-full flex items-center justify-center transition-all",
                                     isPaye
                                         ? "bg-emerald-500/10 text-emerald-500 cursor-default"
-                                        : "bg-muted hover:bg-amber-500/10 hover:text-amber-500 cursor-pointer border-2 border-dashed border-muted-foreground/30 hover:border-amber-500"
+                                        : readOnly
+                                            ? "bg-muted text-muted-foreground cursor-default border-2 border-dashed border-muted-foreground/30"
+                                            : "bg-muted hover:bg-amber-500/10 hover:text-amber-500 cursor-pointer border-2 border-dashed border-muted-foreground/30 hover:border-amber-500"
                                 )}
-                                title={isPaye ? `Payé le ${formatDate(paiement.date_paiement)}` : `Cliquez pour ajouter le paiement de ${mois.nom}`}
+                                title={isPaye ? `Payé le ${formatDate(paiement.date_paiement)}` : readOnly ? `Paiement en attente pour ${mois.nom}` : `Cliquez pour ajouter le paiement de ${mois.nom}`}
                             >
                                 {isPaye ? (
                                     <CheckCircle2 className="w-5 h-5" />
@@ -198,6 +202,7 @@ export function PaiementsTimeline({
                                     <Circle className="w-5 h-5" />
                                 )}
                             </button>
+
 
                             {/* Ligne de connexion */}
                             {index < MOIS_SAISON.length - 1 && (

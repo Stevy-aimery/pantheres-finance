@@ -75,10 +75,15 @@ export function DashboardLayout({
     const handleLogout = async () => {
         // Supprimer le cookie active-role
         document.cookie = "active-role=; path=/; max-age=0"
+        // Nettoyer le localStorage
+        localStorage.removeItem("user_roles")
+        localStorage.removeItem("user_role")
+        // Déconnexion Supabase
         await supabase.auth.signOut()
-        router.push("/login")
-        router.refresh()
+        // Forcer la redirection vers la page de connexion
+        window.location.href = "/login"
     }
+
 
     const handleSwitchProfile = () => {
         // Supprimer le cookie pour forcer la re-sélection

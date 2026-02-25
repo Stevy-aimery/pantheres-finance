@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { BudgetForm } from "../budget-form"
 
@@ -7,6 +8,11 @@ interface PageProps {
 }
 
 export default async function ModifierBudgetPage({ params }: PageProps) {
+    // 🔒 Protection Bureau (lecture seule)
+    const cookieStore = await cookies()
+    const activeRole = cookieStore.get("active-role")?.value
+    if (activeRole === "bureau") redirect("/dashboard/budget")
+
     const { id } = await params
     const supabase = await createClient()
 
