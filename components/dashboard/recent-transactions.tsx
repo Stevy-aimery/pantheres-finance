@@ -29,13 +29,8 @@ function formatCurrency(amount: number) {
     }).format(amount)
 }
 
-function formatDate(dateStr: string) {
-    const date = new Date(dateStr)
-    return new Intl.DateTimeFormat("fr-FR", {
-        day: "2-digit",
-        month: "short",
-    }).format(date)
-}
+import { formatDateCompact } from "@/lib/utils"
+
 
 export function RecentTransactions({ transactions }: RecentTransactionsProps) {
     return (
@@ -85,7 +80,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                                                 isRecette ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                                             )}
                                         >
-                                            {formatDate(transaction.date)}
+                                            {formatDateCompact(transaction.date)}
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium truncate max-w-[180px]">

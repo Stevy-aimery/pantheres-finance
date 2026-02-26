@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils"
 import { deleteBudget } from "./actions"
 import { toast } from "sonner"
+import { BureauInfoPanel } from "@/components/dashboard/bureau-info-panel"
 
 // Types
 interface BudgetItem {
@@ -354,36 +355,48 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin, readOnly = fal
                 </Card>
             </div>
 
-            {/* Alertes */}
-            {(alertes.length > 0 || attentions.length > 0) && (
-                <Card className="border-amber-500/50 bg-amber-500/5">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-amber-500">
-                            <AlertTriangle className="h-5 w-5" />
-                            Alertes Budget ({alertes.length + attentions.length})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            {alertes.map(b => (
-                                <div key={b.id} className="flex items-center gap-2 text-red-500">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span className="text-sm">
-                                        <strong>{b.categorie}</strong> : dépassement de {formatCurrency(Math.abs(b.ecart))} ({b.pourcentage.toFixed(0)}% du budget)
-                                    </span>
-                                </div>
-                            ))}
-                            {attentions.map(b => (
-                                <div key={b.id} className="flex items-center gap-2 text-amber-500">
-                                    <AlertTriangle className="h-4 w-4" />
-                                    <span className="text-sm">
-                                        <strong>{b.categorie}</strong> : {b.pourcentage.toFixed(0)}% du budget consommé
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+            {/* Alertes / Infos */}
+            {readOnly ? (
+                /* Mode Bureau : résumé informatif neutre */
+                <BureauInfoPanel
+                    sections={["budget"]}
+                    budgetAlertes={alertes.length}
+                    budgetAttentions={attentions.length}
+                    totalBudget={totalBudgetDepenses + totalBudgetRecettes}
+                    totalRealise={totalRealiseDepenses + totalRealiseRecettes}
+                />
+            ) : (
+                /* Mode Trésorier : alertes d'action */
+                (alertes.length > 0 || attentions.length > 0) && (
+                    <Card className="border-amber-500/50 bg-amber-500/5">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-amber-500">
+                                <AlertTriangle className="h-5 w-5" />
+                                Alertes Budget ({alertes.length + attentions.length})
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                {alertes.map(b => (
+                                    <div key={b.id} className="flex items-center gap-2 text-red-500">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span className="text-sm">
+                                            <strong>{b.categorie}</strong> : dépassement de {formatCurrency(Math.abs(b.ecart))} ({b.pourcentage.toFixed(0)}% du budget)
+                                        </span>
+                                    </div>
+                                ))}
+                                {attentions.map(b => (
+                                    <div key={b.id} className="flex items-center gap-2 text-amber-500">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span className="text-sm">
+                                            <strong>{b.categorie}</strong> : {b.pourcentage.toFixed(0)}% du budget consommé
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
             )}
 
             {/* Tables */}

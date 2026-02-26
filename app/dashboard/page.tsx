@@ -6,6 +6,7 @@ import { CotisationsStatus } from "@/components/dashboard/cotisations-status"
 import { BudgetOverview } from "@/components/dashboard/budget-overview"
 import { AlertesPanel } from "@/components/dashboard/alertes-panel"
 import { JoueurDashboard } from "@/components/dashboard/joueur-dashboard"
+import { BureauInfoPanel } from "@/components/dashboard/bureau-info-panel"
 import { genererAlertes } from "@/lib/alertes"
 
 export const dynamic = "force-dynamic"
@@ -247,6 +248,16 @@ export default async function DashboardPage() {
                 </div>
 
                 <KPICards data={kpis} />
+
+                <BureauInfoPanel
+                    sections={["finance", "cotisations"]}
+                    soldeActuel={kpis.soldeActuel}
+                    totalRecettes={kpis.totalRecettes}
+                    totalDepenses={kpis.totalDepenses}
+                    membresActifs={kpis.membresActifs}
+                    membresEnRetard={kpis.membresEnRetard}
+                    tauxRecouvrement={kpis.tauxRecouvrement}
+                />
 
                 <div className="grid gap-6 lg:grid-cols-2">
                     <RecentTransactions transactions={transactions} />

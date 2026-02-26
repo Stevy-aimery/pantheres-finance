@@ -57,6 +57,7 @@ import { createClient } from "@/lib/supabase/client"
 import { MembreDetailModal } from "@/components/dashboard/membre-detail-modal"
 import { toast } from "sonner"
 import { TresorierOnly } from "@/lib/permissions"
+import { BureauInfoPanel } from "@/components/dashboard/bureau-info-panel"
 
 interface Membre {
     id: string
@@ -242,6 +243,23 @@ export function MembresClient({ membres, cotisations, readOnly = false }: Membre
                     </TresorierOnly>
                 )}
             </div>
+
+            {/* Panneau informatif Bureau */}
+            {readOnly && (() => {
+                const cotisationsList = Object.values(cotisations)
+                const totalMembres = cotisationsList.length
+                const enRetard = cotisationsList.filter(c => c.etat_paiement === "Retard").length
+                const aJour = totalMembres - enRetard
+                const taux = totalMembres > 0 ? Math.round((aJour / totalMembres) * 100) : 0
+                return (
+                    <BureauInfoPanel
+                        sections={["cotisations"]}
+                        membresActifs={totalMembres}
+                        membresEnRetard={enRetard}
+                        tauxRecouvrement={taux}
+                    />
+                )
+            })()}
 
             {/* Stats Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

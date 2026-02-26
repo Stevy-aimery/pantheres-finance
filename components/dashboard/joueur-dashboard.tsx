@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { formatDate, formatDateLong } from "@/lib/utils"
 import {
     Table,
     TableBody,
@@ -68,8 +69,7 @@ export function JoueurDashboard({ membre, cotisation, paiements }: JoueurDashboa
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat("fr-MA", { style: "decimal", minimumFractionDigits: 0 }).format(amount) + " MAD"
 
-    const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+
 
     return (
         <div className="space-y-8">
@@ -286,11 +286,7 @@ export function JoueurDashboard({ membre, cotisation, paiements }: JoueurDashboa
                             {
                                 icon: Calendar,
                                 label: "Membre depuis",
-                                value: new Date(membre.date_entree).toLocaleDateString("fr-FR", {
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                }),
+                                value: formatDateLong(membre.date_entree),
                             },
                         ].map(({ icon: Icon, label, value }) => (
                             <div key={label} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">

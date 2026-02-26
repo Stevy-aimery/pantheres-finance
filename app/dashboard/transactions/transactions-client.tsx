@@ -54,11 +54,13 @@ import {
     FileSpreadsheet,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatDate } from "@/lib/utils"
 import { convertToCSV, downloadCSV, formatDateExport, formatMontantExport } from "@/lib/export"
 import { exportToExcel, EXCEL_COLUMNS } from "@/lib/export-excel"
 import { deleteTransaction } from "./actions"
 import { toast } from "sonner"
 import { TresorierOnly, ExportButton, useRole } from "@/lib/permissions"
+import { BureauInfoPanel } from "@/components/dashboard/bureau-info-panel"
 
 interface Transaction {
     id: string
@@ -90,13 +92,7 @@ function formatCurrency(amount: number) {
     }).format(amount) + " MAD"
 }
 
-function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    })
-}
+
 
 // Catégories prédéfinies
 const CATEGORIES_RECETTES = [
@@ -266,6 +262,15 @@ export function TransactionsClient({
                         )}
                     </p>
                 </div>
+
+                {readOnly && (
+                    <BureauInfoPanel
+                        sections={["finance"]}
+                        soldeActuel={soldeActuel}
+                        totalRecettes={totalRecettes}
+                        totalDepenses={totalDepenses}
+                    />
+                )}
 
                 <div className="flex gap-2">
                     <ExportButton>

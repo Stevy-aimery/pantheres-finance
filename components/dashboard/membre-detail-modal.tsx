@@ -24,7 +24,7 @@ import {
     Pencil,
     ArrowLeft,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { PaiementsTimeline } from "./paiements-timeline"
 
@@ -73,13 +73,8 @@ function formatCurrency(amount: number) {
     }).format(amount) + " MAD"
 }
 
-function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    })
-}
+
+
 
 export function MembreDetailModal({
     membre,

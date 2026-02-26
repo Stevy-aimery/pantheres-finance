@@ -90,15 +90,18 @@ export async function proxy(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     // Routes publiques (pas besoin d'authentification)
-    const publicRoutes = ['/login', '/auth/callback', '/change-password', '/select-profile']
+    const publicRoutes = ['/', '/login', '/auth/callback', '/change-password', '/select-profile']
     const isPublicRoute = publicRoutes.some(route =>
-        request.nextUrl.pathname.startsWith(route)
+        request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
     )
 
-    // Si pas connecté et route protégée, rediriger vers login
+    // Si pas connecté et route protégée, rediriger vers login (sans redirectTo si c'est '/')
     if (!user && !isPublicRoute) {
         const redirectUrl = new URL('/login', request.url)
-        redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+        const from = request.nextUrl.pathname
+        if (from !== '/') {
+            redirectUrl.searchParams.set('redirectTo', from)
+        }
         return NextResponse.redirect(redirectUrl)
     }
 
@@ -135,7 +138,10 @@ export async function proxy(request: NextRequest) {
         const effectiveRole = activeRole || mainRole
 
         if (!isRouteAllowed(effectiveRole, request.nextUrl.pathname)) {
-            return NextResponse.redirect(new URL('/dashboard', request.url))
+            // Éviter la boucle infinie : ne pas rediriger vers la même URL
+            const currentPath = request.nextUrl.pathname
+            const fallback = currentPath === '/dashboard' ? '/select-profile' : '/dashboard'
+            return NextResponse.redirect(new URL(fallback, request.url))
         }
     }
 

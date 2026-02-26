@@ -27,7 +27,7 @@ import {
     Loader2,
     Banknote,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { envoyerConfirmationPaiement } from "@/app/actions/emails"
@@ -66,12 +66,8 @@ const MODES_PAIEMENT = [
     { value: "Chèque", label: "Chèque" },
 ]
 
-function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "short",
-    })
-}
+
+
 
 export function PaiementsTimeline({
     membreId,
