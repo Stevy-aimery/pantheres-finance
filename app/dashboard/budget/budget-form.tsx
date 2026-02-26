@@ -19,6 +19,7 @@ import { ArrowLeft, Save, Loader2, TrendingUp, TrendingDown } from "lucide-react
 import { cn } from "@/lib/utils"
 import { createBudget, updateBudget, BudgetFormData } from "./actions"
 import { toast } from "sonner"
+import { DatePicker } from "@/components/ui/date-picker"
 
 interface Budget {
     id: string
@@ -252,24 +253,20 @@ export function BudgetForm({ budget, typePreselectionne }: BudgetFormProps) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 flex flex-col justify-end">
                                     <Label htmlFor="debut">Date début</Label>
-                                    <Input
+                                    <DatePicker
                                         id="debut"
-                                        type="date"
                                         value={periodeDebut}
-                                        onChange={(e) => setPeriodeDebut(e.target.value)}
-                                        required
+                                        onChange={setPeriodeDebut}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-2 flex flex-col justify-end">
                                     <Label htmlFor="fin">Date fin</Label>
-                                    <Input
+                                    <DatePicker
                                         id="fin"
-                                        type="date"
                                         value={periodeFin}
-                                        onChange={(e) => setPeriodeFin(e.target.value)}
-                                        required
+                                        onChange={setPeriodeFin}
                                     />
                                 </div>
                             </div>

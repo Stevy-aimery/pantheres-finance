@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/select"
 import { ArrowLeft, Loader2, UserPlus, Shield, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createMembre, updateMembre, type MembreFormData } from "./actions"
+import { createMembre, updateMembre } from "./actions"
+import type { MembreFormData } from "@/lib/validations"
+import { toast } from "sonner"
+import { DatePicker } from "@/components/ui/date-picker"
 
 interface Membre {
     id: string
@@ -75,26 +78,32 @@ export function MembreForm({ membre, mode }: MembreFormProps) {
                 ? await createMembre(formData)
                 : await updateMembre(membre!.id, formData)
 
-            // Si result existe et contient une erreur, l'afficher
             if (result?.error) {
                 setError(result.error)
+                toast.error(result.error)
                 setLoading(false)
-            }
-            // Sinon, la redirection s'est faite avec succès
-            // (pas besoin de gérer, le redirect() s'occupe de tout)
-        } catch (err) {
-            // Ignorer les erreurs de type NEXT_REDIRECT (comportement normal)
-            // Elles sont lancées par redirect() pour changer de page
-            if (err && typeof err === 'object' && 'digest' in err &&
-                typeof err.digest === 'string' && err.digest.includes('NEXT_REDIRECT')) {
-                // C'est une redirection normale, ne rien faire
                 return
             }
-            // Sinon, c'est une vraie erreur
-            setError("Une erreur est survenue")
+
+            // ✅ Succès : toast puis redirection
+            const message = result?.message ||
+                (mode === "create" ? "Membre créé avec succès !" : "Modifications enregistrées !")
+            toast.success(message)
+            setTimeout(() => router.push("/dashboard/membres"), 1200)
+
+        } catch (err) {
+            if (err && typeof err === 'object' && 'digest' in err &&
+                typeof err.digest === 'string' && err.digest.includes('NEXT_REDIRECT')) {
+                return
+            }
+            console.error("[MembreForm] handleSubmit error:", err)
+            const message = err instanceof Error ? err.message : "Une erreur inattendue est survenue"
+            setError(message)
+            toast.error(message)
             setLoading(false)
         }
     }
+
 
     // Calculer cotisation prévisionnelle
     const getCotisationPreview = () => {
@@ -180,12 +189,10 @@ export function MembreForm({ membre, mode }: MembreFormProps) {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="date_entree">Date d&apos;entrée *</Label>
-                                    <Input
+                                    <DatePicker
                                         id="date_entree"
-                                        type="date"
                                         value={formData.date_entree}
-                                        onChange={(e) => setFormData({ ...formData, date_entree: e.target.value })}
-                                        required
+                                        onChange={(val) => setFormData({ ...formData, date_entree: val })}
                                     />
                                 </div>
                                 <div className="space-y-2">

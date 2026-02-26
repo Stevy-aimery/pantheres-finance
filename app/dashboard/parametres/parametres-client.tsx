@@ -5,16 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { Save, RotateCw, Settings, DollarSign, Bell, Mail, CalendarDays, ShieldCheck, CalendarIcon } from "lucide-react"
+import { Save, RotateCw, Settings, DollarSign, Bell, Mail, CalendarDays, ShieldCheck } from "lucide-react"
 import { updateParametre } from "./actions"
 import type { Parametre } from "@/lib/types"
 import { toast } from "sonner"
 import { cn, formatDateLong } from "@/lib/utils"
-import { fr } from "date-fns/locale"
+import { DatePicker } from "@/components/ui/date-picker"
 
 // Clés de type "date" — doivent afficher un DatePicker
 const DATE_KEYS = ["saison_debut", "saison_fin"]
@@ -59,70 +56,7 @@ const PARAM_LABELS: Record<string, string> = {
     email_bureau: "Emails du bureau (séparés par ,)",
 }
 
-// ───── DatePicker inline ─────
-interface DatePickerFieldProps {
-    id: string
-    value: string // YYYY-MM-DD
-    isEdited: boolean
-    onChange: (value: string) => void
-}
 
-function DatePickerField({ id, value, isEdited, onChange }: DatePickerFieldProps) {
-    const [open, setOpen] = useState(false)
-
-    // Convertir la valeur string YYYY-MM-DD → Date (sans décalage timezone)
-    const parseDate = (str: string): Date | undefined => {
-        if (!str) return undefined
-        const [y, m, d] = str.split("-").map(Number)
-        if (!y || !m || !d) return undefined
-        return new Date(y, m - 1, d)
-    }
-
-    const selected = parseDate(value)
-
-    const handleSelect = (date: Date | undefined) => {
-        if (!date) return
-        // Formater en YYYY-MM-DD (sans timezone)
-        const yyyy = date.getFullYear()
-        const mm = String(date.getMonth() + 1).padStart(2, "0")
-        const dd = String(date.getDate()).padStart(2, "0")
-        onChange(`${yyyy}-${mm}-${dd}`)
-        setOpen(false)
-    }
-
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button
-                    id={id}
-                    variant="outline"
-                    className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selected && "text-muted-foreground",
-                        isEdited && "border-amber-500 ring-1 ring-amber-500/30"
-                    )}
-                >
-                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                    {selected ? formatDateLong(selected) : "Sélectionner une date"}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                    mode="single"
-                    selected={selected}
-                    onSelect={handleSelect}
-                    locale={fr}
-                    defaultMonth={selected}
-                    initialFocus
-                    classNames={{
-                        day_selected: "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600",
-                        day_today: "border border-amber-400 text-amber-600 font-semibold",
-                    }}
-                />
-            </PopoverContent>
-        </Popover>
-    )
-}
 
 // ───── Composant principal ─────
 interface ParametresClientProps {
@@ -264,11 +198,11 @@ export function ParametresClient({ parametres: initialParametres }: ParametresCl
                                         <div className="sm:col-span-2 flex items-center gap-3">
                                             {isDateField ? (
                                                 <div className="flex-1">
-                                                    <DatePickerField
+                                                    <DatePicker
                                                         id={cle}
                                                         value={getParamValue(cle)}
-                                                        isEdited={isEdited}
-                                                        onChange={(val) => handleChange(cle, val)}
+                                                        onChange={(val: string) => handleChange(cle, val)}
+                                                        className={isEdited ? "border-amber-500 ring-1 ring-amber-500/30" : ""}
                                                     />
                                                 </div>
                                             ) : (

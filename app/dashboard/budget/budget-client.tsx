@@ -36,7 +36,7 @@ import {
     Wallet,
     PiggyBank,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import { deleteBudget } from "./actions"
 import { toast } from "sonner"
 import { BureauInfoPanel } from "@/components/dashboard/bureau-info-panel"
@@ -263,7 +263,7 @@ export function BudgetClient({ budgets, periodeDebut, periodeFin, readOnly = fal
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Budget Prévisionnel</h1>
                     <p className="text-muted-foreground">
-                        Période : {new Date(periodeDebut).toLocaleDateString("fr-FR")} - {new Date(periodeFin).toLocaleDateString("fr-FR")}
+                        Période : {formatDate(periodeDebut)} - {formatDate(periodeFin)}
                         {readOnly && (
                             <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-medium">
                                 Lecture seule

@@ -25,7 +25,7 @@ export const membreSchema = z.object({
     nom_prenom: z.string().min(2, "Le nom est requis (2 caractères minimum)").max(255, "Nom trop long"),
     telephone: z.string().min(10, "Le téléphone doit contenir au moins 10 caractères").max(20, "Téléphone trop long"),
     email: z.string().email("Email invalide").max(255, "Email trop long"),
-    statut: z.enum(["Actif", "Blessé", "Arrêt/Départ"], { message: "Statut invalide" }),
+    statut: z.enum(["Actif", "Blessé", "Arrêt/Départ", "Désactivé"], { message: "Statut invalide" }),
     role_joueur: z.boolean(),
     role_bureau: z.boolean(),
     fonction_bureau: z.string().max(100, "Fonction trop longue").optional().nullable(),

@@ -7,8 +7,7 @@ import { requireTresorier } from "@/lib/auth-guard"
 import { membreSchema, uuidSchema, formatZodErrors } from "@/lib/validations"
 import type { MembreFormData } from "@/lib/validations"
 
-// Réexport du type pour les composants existants
-export type { MembreFormData }
+
 
 export async function createMembre(data: MembreFormData) {
     // 🔒 Vérification backend : Trésorier uniquement
@@ -93,7 +92,7 @@ export async function createMembre(data: MembreFormData) {
     }
 
     revalidatePath("/dashboard/membres")
-    redirect("/dashboard/membres")
+    return { success: true, message: "Membre créé avec succès" }
 }
 
 
@@ -112,19 +111,50 @@ export async function updateMembre(id: string, data: MembreFormData) {
 
     const supabase = await createClient()
 
+    // Récupérer l'ancien email pour détecter un changement
+    const { data: existing } = await supabase
+        .from("membres")
+        .select("email, auth_user_id")
+        .eq("id", idParsed.data)
+        .maybeSingle()
+
+    const emailChanged = existing && existing.email !== parsed.data.email.toLowerCase()
+
+    // Mettre à jour le membre en BDD
     const { error } = await supabase
         .from("membres")
-        .update(parsed.data)
+        .update({ ...parsed.data, email: parsed.data.email.toLowerCase() })
         .eq("id", idParsed.data)
 
     if (error) {
         console.error("Erreur mise à jour membre:", error.message)
-        return { error: "Erreur lors de la mise à jour du membre." }
+        if (error.message.includes("duplicate") || error.message.includes("unique")) {
+            return { error: "Cet email est déjà utilisé par un autre membre." }
+        }
+        return { error: `Erreur lors de la mise à jour : ${error.message}` }
+    }
+
+    // 🔄 Synchroniser l'email dans Auth Supabase si changé
+    if (emailChanged && existing?.auth_user_id) {
+        try {
+            const { createAdminClient } = await import("@/lib/supabase/admin")
+            const adminClient = createAdminClient()
+            const { error: authError } = await adminClient.auth.admin.updateUserById(
+                existing.auth_user_id,
+                { email: parsed.data.email.toLowerCase() }
+            )
+            if (authError) {
+                console.warn("Mise à jour email Auth échouée (non bloquant):", authError.message)
+            }
+        } catch (e) {
+            console.warn("Module admin non disponible pour sync email Auth:", e)
+        }
     }
 
     revalidatePath("/dashboard/membres")
-    redirect("/dashboard/membres")
+    return { success: true, message: "Membre mis à jour avec succès" }
 }
+
 
 export async function deleteMembre(id: string) {
     // 🔒 Vérification backend : Trésorier uniquement
@@ -135,6 +165,17 @@ export async function deleteMembre(id: string) {
     if (!idParsed.success) { return { error: "ID de membre invalide." } }
 
     const supabase = await createClient()
+
+    // ⛔ Vérifier qu'on ne supprime pas un compte vital (Trésorier ou Président)
+    const { data: membreToCheck } = await supabase
+        .from("membres")
+        .select("fonction_bureau")
+        .eq("id", idParsed.data)
+        .single()
+
+    if (membreToCheck && (membreToCheck.fonction_bureau === "Trésorier" || membreToCheck.fonction_bureau === "Président")) {
+        return { error: "Action interdite : Impossible de supprimer le Trésorier ou le Président." }
+    }
 
     const { error } = await supabase
         .from("membres")
@@ -148,5 +189,42 @@ export async function deleteMembre(id: string) {
 
     revalidatePath("/dashboard/membres")
     return { success: true }
+}
+
+export async function toggleMembreStatus(id: string, isDesactive: boolean) {
+    // 🔒 Vérification backend : Trésorier uniquement
+    try { await requireTresorier() } catch { return { error: "Accès refusé. Action réservée au Trésorier." } }
+
+    const idParsed = uuidSchema.safeParse(id)
+    if (!idParsed.success) { return { error: "ID de membre invalide." } }
+
+    const supabase = await createClient()
+    const newStatut = isDesactive ? "Désactivé" : "Actif"
+
+    // ⛔ Éviter de désactiver le propre compte du trésorier ou président
+    if (isDesactive) {
+        const { data: membreToCheck } = await supabase
+            .from("membres")
+            .select("fonction_bureau")
+            .eq("id", idParsed.data)
+            .single()
+
+        if (membreToCheck && (membreToCheck.fonction_bureau === "Trésorier" || membreToCheck.fonction_bureau === "Président")) {
+            return { error: "Action interdite : Impossible de désactiver le compte du Trésorier ou du Président." }
+        }
+    }
+
+    const { error } = await supabase
+        .from("membres")
+        .update({ statut: newStatut })
+        .eq("id", idParsed.data)
+
+    if (error) {
+        console.error("Erreur toggle statut:", error.message)
+        return { error: "Erreur lors de la modification du statut." }
+    }
+
+    revalidatePath("/dashboard/membres")
+    return { success: true, message: `Membre ${isDesactive ? 'désactivé' : 'réactivé'} avec succès.` }
 }
 

@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 import { createTransactionAction, updateTransactionAction, TransactionFormData } from "./actions"
 import { TiersCombobox } from "@/components/ui/tiers-combobox"
 import { toast } from "sonner"
+import { DatePicker } from "@/components/ui/date-picker"
 
 interface Membre {
     id: string
@@ -284,14 +285,12 @@ export function TransactionForm({ transaction, membres, sponsors = [] }: Transac
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-2 flex flex-col justify-end">
                                     <Label htmlFor="date">Date *</Label>
-                                    <Input
+                                    <DatePicker
                                         id="date"
-                                        type="date"
                                         value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                        required
+                                        onChange={setDate}
                                         disabled={isLoading}
                                     />
                                 </div>

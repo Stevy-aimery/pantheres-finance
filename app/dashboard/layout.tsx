@@ -22,7 +22,7 @@ export default async function DashboardRootLayout({
 
     let { data: membre } = await supabase
         .from("membres")
-        .select("id, fonction_bureau")
+        .select("id, fonction_bureau, statut")
         .eq("auth_user_id", user.id)
         .single()
 
@@ -30,10 +30,20 @@ export default async function DashboardRootLayout({
     if (!membre) {
         const { data: membreByEmail } = await supabase
             .from("membres")
-            .select("id, fonction_bureau")
+            .select("id, fonction_bureau, statut")
             .eq("email", user.email)
             .single()
         membre = membreByEmail
+    }
+
+    // 🛡️ Blocage d'accès : Membre supprimé ou Désactivé
+    if (!membre) {
+        // Le compte auth existe mais plus le membre
+        redirect("/login?error=account_deleted")
+    }
+
+    if (membre.statut === "Désactivé") {
+        redirect("/login?error=account_disabled")
     }
 
     if (membre) {

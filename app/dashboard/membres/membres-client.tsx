@@ -58,6 +58,7 @@ import { MembreDetailModal } from "@/components/dashboard/membre-detail-modal"
 import { toast } from "sonner"
 import { TresorierOnly } from "@/lib/permissions"
 import { BureauInfoPanel } from "@/components/dashboard/bureau-info-panel"
+import { deleteMembre, toggleMembreStatus } from "./actions"
 
 interface Membre {
     id: string
@@ -156,21 +157,28 @@ export function MembresClient({ membres, cotisations, readOnly = false }: Membre
         if (!membreToDelete) return
 
         setDeleting(true)
-        const { error } = await supabase
-            .from("membres")
-            .delete()
-            .eq("id", membreToDelete.id)
-
+        const result = await deleteMembre(membreToDelete.id)
         setDeleting(false)
         setDeleteDialogOpen(false)
 
-        if (!error) {
+        if (result?.error) {
+            toast.error(result.error)
+        } else {
             toast.success("Membre supprimé", {
                 description: "Le membre a été retiré de la liste",
             })
-            router.refresh()
+            // router.refresh() appelé par le Server Action
+        }
+    }
+
+    const handleToggleStatus = async (id: string, currentlyActive: boolean) => {
+        const idToast = toast.loading(currentlyActive ? "Désactivation..." : "Activation...")
+        const result = await toggleMembreStatus(id, currentlyActive)
+
+        if (result?.error) {
+            toast.error(result.error, { id: idToast })
         } else {
-            toast.error("Erreur lors de la suppression")
+            toast.success(result.message, { id: idToast })
         }
     }
 
@@ -211,6 +219,8 @@ export function MembresClient({ membres, cotisations, readOnly = false }: Membre
                 return <Badge className="bg-amber-500/10 text-amber-500 border-0">Blessé</Badge>
             case "Arrêt/Départ":
                 return <Badge className="bg-red-500/10 text-red-500 border-0">Arrêt</Badge>
+            case "Désactivé":
+                return <Badge className="bg-zinc-500/10 text-zinc-500 border-0">Désactivé</Badge>
             default:
                 return <Badge variant="secondary">{statut}</Badge>
         }
@@ -461,17 +471,40 @@ export function MembresClient({ membres, cotisations, readOnly = false }: Membre
                                                                         Modifier
                                                                     </Link>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="text-destructive focus:text-destructive"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        setMembreToDelete(membre)
-                                                                        setDeleteDialogOpen(true)
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                                    Supprimer
-                                                                </DropdownMenuItem>
+
+                                                                {membre.fonction_bureau !== "Trésorier" && membre.fonction_bureau !== "Président" && (
+                                                                    <>
+                                                                        <DropdownMenuItem
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                handleToggleStatus(membre.id, membre.statut !== "Désactivé")
+                                                                            }}
+                                                                        >
+                                                                            {membre.statut !== "Désactivé" ? (
+                                                                                <>
+                                                                                    <AlertCircle className="mr-2 h-4 w-4 text-amber-500" />
+                                                                                    Désactiver l&apos;accès
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <UserCheck className="mr-2 h-4 w-4 text-emerald-500" />
+                                                                                    Réactiver l&apos;accès
+                                                                                </>
+                                                                            )}
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem
+                                                                            className="text-destructive focus:text-destructive"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                setMembreToDelete(membre)
+                                                                                setDeleteDialogOpen(true)
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                                            Supprimer
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </TableCell>

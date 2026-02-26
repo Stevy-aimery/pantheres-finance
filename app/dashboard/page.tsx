@@ -107,7 +107,7 @@ async function getJoueurData(userId: string, email?: string) {
         .from("membres")
         .select("*")
         .eq("auth_user_id", userId)
-        .single()
+        .maybeSingle()
 
     let membre = membreById
 
@@ -121,18 +121,36 @@ async function getJoueurData(userId: string, email?: string) {
             .from("membres")
             .select("*")
             .eq("email", email)
-            .single()
+            .limit(1)
+            .maybeSingle()
 
         if (errorByEmail) {
             console.error("[getJoueurData] Email fallback also failed:", errorByEmail.message, "| email:", email)
         }
+
         membre = membreByEmail
+
+        // ✅ Auto-linking : on associe auth_user_id au membre pour les prochaines connexions
+        if (membre && !membre.auth_user_id) {
+            const { error: linkError } = await supabase
+                .from("membres")
+                .update({ auth_user_id: userId })
+                .eq("id", membre.id)
+
+            if (linkError) {
+                console.warn("[getJoueurData] Auto-link auth_user_id failed:", linkError.message)
+            } else {
+                console.log("[getJoueurData] ✅ Auth user linked to membre:", membre.id)
+                membre = { ...membre, auth_user_id: userId }
+            }
+        }
     }
 
     if (!membre) {
         console.error("[getJoueurData] No member found for userId:", userId, "email:", email)
         return null
     }
+
 
     // Récupérer le statut de cotisation
     const { data: cotisation } = await supabase
