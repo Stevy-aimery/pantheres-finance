@@ -1,6 +1,7 @@
+-- ❌ DEPRECATED — Ce fichier utilisait USING(true) sur toutes les tables (non sécurisé).
+-- ✅ Utiliser désormais : database/supabase-rls-secure.sql
 -- =============================================
--- CORRECTION DES POLITIQUES RLS
--- Résout l'erreur "infinite recursion detected"
+-- CORRECTION DES POLITIQUES RLS (ANCIEN FICHIER)
 -- =============================================
 
 -- Étape 1 : Supprimer les anciennes politiques problématiques
